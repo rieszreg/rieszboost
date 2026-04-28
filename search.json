@@ -1,0 +1,712 @@
+[
+  {
+    "objectID": "sklearn-integration.html",
+    "href": "sklearn-integration.html",
+    "title": "scikit-learn integration",
+    "section": "",
+    "text": "RieszBooster is an sklearn.base.BaseEstimator. Anything in sklearn.model_selection works on it without adapter code: cross-fitting, hyperparameter search, pipelines, model cloning. There is intentionally no bespoke crossfit() function — the design rule is to lean on scikit-learn’s well-tested machinery rather than reinvent it.",
+    "crumbs": [
+      "scikit-learn integration"
+    ]
+  },
+  {
+    "objectID": "sklearn-integration.html#cross-fitting-for-downstream-inference",
+    "href": "sklearn-integration.html#cross-fitting-for-downstream-inference",
+    "title": "scikit-learn integration",
+    "section": "Cross-fitting for downstream inference",
+    "text": "Cross-fitting for downstream inference\nPlug-in \\(\\hat\\alpha\\) in a one-step / TMLE / DML estimator must be out-of-fold to avoid bias from over-fitting. cross_val_predict does this for any sklearn estimator.\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom sklearn.model_selection import cross_val_predict\nfrom rieszboost import RieszBooster, ATE\n\nrng = np.random.default_rng(0)\nn = 2000\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(-0.02 * x - x**2 + 4 * np.log(x + 0.3) + 1.5)))\na = rng.binomial(1, pi)\ndf = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\n\nbooster = RieszBooster(\n    estimand=ATE(),\n    n_estimators=2000,\n    early_stopping_rounds=20,\n    validation_fraction=0.2,\n    learning_rate=0.05,\n    max_depth=4,\n)\n\nalpha_oof = cross_val_predict(booster, df, cv=5)\nalpha_oof.shape, alpha_oof[:5]\n\n((2000,), array([-3.6196816, -1.6876634, -1.0861515, -1.0516312,  1.2505229],\n      dtype=float32))\n\n\n\n\n\nset.seed(0)\nn  &lt;- 2000\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\n# The cleanest cross-fit from R is to call the sklearn function via\n# reticulate, passing the underlying Python estimator object. The R6 wrapper\n# exposes it as `$py`.\nsk_ms &lt;- reticulate::import(\"sklearn.model_selection\", convert = FALSE)\nbooster &lt;- RieszBooster$new(\n  estimand = ATE(),\n  n_estimators = 2000L,\n  early_stopping_rounds = 20L,\n  validation_fraction = 0.2,\n  learning_rate = 0.05,\n  max_depth = 4L\n)\nalpha_oof &lt;- as.numeric(reticulate::py_to_r(\n  sk_ms$cross_val_predict(booster$py, reticulate::r_to_py(df), cv = 5L)\n))\nlength(alpha_oof); head(alpha_oof)\n\n[1] 2000\n\n\n[1]  1.301584  6.205725  2.930262 -3.024208  1.465699 -1.293439\n\n\n\n\n\nEach fold runs its own internal early-stopping split — there is nothing to thread between folds.",
+    "crumbs": [
+      "scikit-learn integration"
+    ]
+  },
+  {
+    "objectID": "sklearn-integration.html#hyperparameter-search-with-gridsearchcv",
+    "href": "sklearn-integration.html#hyperparameter-search-with-gridsearchcv",
+    "title": "scikit-learn integration",
+    "section": "Hyperparameter search with GridSearchCV",
+    "text": "Hyperparameter search with GridSearchCV\nScore is negative held-out Riesz loss (sklearn convention: higher is better), so GridSearchCV selects the configuration with the smallest loss without any sign-flipping on your end.\n\nPythonR\n\n\n\nfrom sklearn.model_selection import GridSearchCV\n\ngrid = GridSearchCV(\n    RieszBooster(\n        estimand=ATE(),\n        n_estimators=300,\n        early_stopping_rounds=20,\n        validation_fraction=0.2,\n    ),\n    param_grid={\"learning_rate\": [0.03, 0.05, 0.1], \"max_depth\": [3, 4, 5]},\n    cv=3,\n    n_jobs=1,\n).fit(df)\n\nprint(\"best params:\", grid.best_params_)\n\nbest params: {'learning_rate': 0.05, 'max_depth': 3}\n\nprint(f\"best score (neg Riesz loss): {grid.best_score_:.4f}\")\n\nbest score (neg Riesz loss): 5.8153\n\nbest = grid.best_estimator_  # already a refitted RieszBooster\nalpha_hat = best.predict(df)\nalpha_hat[:5]\n\narray([-2.770411 , -1.6573501, -1.064923 , -1.0326685,  1.2886328],\n      dtype=float32)\n\n\n\n\n\nsk_ms &lt;- reticulate::import(\"sklearn.model_selection\", convert = FALSE)\nbase  &lt;- RieszBooster$new(\n  estimand = ATE(),\n  n_estimators = 300L,\n  early_stopping_rounds = 20L,\n  validation_fraction = 0.2\n)\ngrid &lt;- sk_ms$GridSearchCV(\n  base$py,\n  param_grid = reticulate::dict(\n    learning_rate = c(0.03, 0.05, 0.1),\n    max_depth = list(3L, 4L, 5L)\n  ),\n  cv = 3L,\n  n_jobs = 1L\n)\ngrid$fit(reticulate::r_to_py(df))\n\nGridSearchCV(cv=3,\n             estimator=RieszBooster(early_stopping_rounds=20,\n                                    estimand=Estimand(feature_keys=('a', 'x'),\n                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x13e1afc40&gt;,\n                                                      extra_keys=(),\n                                                      name='ATE',\n                                                      factory_spec={'args': {'covariates': ['x'],\n                                                                             'treatment': 'a'},\n                                                                    'factory': 'ATE'}),\n                                    n_estimators=300, validation_fraction=0.2),\n             n_jobs=1,\n             param_grid={'learning_rate': [0.03, 0.05, 0.1],\n                         'max_depth': [3, 4, 5]})\n\ncat(\"best params:\\n\"); print(reticulate::py_to_r(grid$best_params_))\n\nbest params:\n\n\n$learning_rate\n[1] 0.1\n\n$max_depth\n[1] 3\n\ncat(sprintf(\"best score (neg Riesz loss): %.4f\\n\",\n            reticulate::py_to_r(grid$best_score_)))\n\nbest score (neg Riesz loss): 6.8145",
+    "crumbs": [
+      "scikit-learn integration"
+    ]
+  },
+  {
+    "objectID": "sklearn-integration.html#what-composability-buys-you",
+    "href": "sklearn-integration.html#what-composability-buys-you",
+    "title": "scikit-learn integration",
+    "section": "What composability buys you",
+    "text": "What composability buys you\nBecause RieszBooster is a regular BaseEstimator:\n\nclone(booster) returns a fresh unfitted copy with the same hyperparameters — useful when you want to fit the same configuration on multiple data subsets.\nPipeline can wrap a feature-engineering step in front of the booster.\nHalvingGridSearchCV, RandomizedSearchCV, BayesSearchCV (skopt) all work without modification.\nget_params() / set_params() introspect/mutate the configuration; this is what the search classes use under the hood.\n\nThe general principle: anywhere scikit-learn’s documentation says “any sklearn estimator,” RieszBooster slots in.",
+    "crumbs": [
+      "scikit-learn integration"
+    ]
+  },
+  {
+    "objectID": "sklearn-integration.html#where-next",
+    "href": "sklearn-integration.html#where-next",
+    "title": "scikit-learn integration",
+    "section": "Where next",
+    "text": "Where next\n\nFor an end-to-end EEE estimator that consumes alpha_oof as the Riesz weight, see examples/lee_schuler/binary_dgp.py in the repo.\nFor tuning intuition (which knobs matter for \\(\\hat\\alpha\\) specifically), see diagnostics and tuning.",
+    "crumbs": [
+      "scikit-learn integration"
+    ]
+  },
+  {
+    "objectID": "references.html",
+    "href": "references.html",
+    "title": "References",
+    "section": "",
+    "text": "Lee & Schuler (2025). RieszBoost: Gradient Boosting for Riesz Regression. arXiv:2501.04871 — the algorithm this library implements.",
+    "crumbs": [
+      "References"
+    ]
+  },
+  {
+    "objectID": "references.html#core-method",
+    "href": "references.html#core-method",
+    "title": "References",
+    "section": "",
+    "text": "Lee & Schuler (2025). RieszBoost: Gradient Boosting for Riesz Regression. arXiv:2501.04871 — the algorithm this library implements.",
+    "crumbs": [
+      "References"
+    ]
+  },
+  {
+    "objectID": "references.html#riesz-regression-background",
+    "href": "references.html#riesz-regression-background",
+    "title": "References",
+    "section": "Riesz regression background",
+    "text": "Riesz regression background\n\nChernozhukov, Newey, Quintas-Martínez & Syrgkanis (2021). RieszNet and ForestRiesz: Automatic Debiased Machine Learning of Causal and Structural Effects. arXiv:2110.03031 — neural-net and random-forest Riesz regression.\n**Chernozhukov, Newey, Quintas-Martínez & Syrgkanis (2022).* Automatic Debiased Machine Learning via Riesz Regression. arXiv:2104.14737 — origin of the squared Riesz loss.\nSingh (2021). Kernel Methods for Unobserved Confounding: Negative Controls, Proxies, and Instruments. arXiv:2102.11076 — closed-form RKHS estimator.",
+    "crumbs": [
+      "References"
+    ]
+  },
+  {
+    "objectID": "references.html#bregman-generalization",
+    "href": "references.html#bregman-generalization",
+    "title": "References",
+    "section": "Bregman generalization",
+    "text": "Bregman generalization\n\nHines & Miles (2025). Bregman-divergence Riesz Regression. arXiv:2510.16127.\nKato (2026). Generalized Riesz Loss via Bregman Divergence. arXiv:2601.07752.",
+    "crumbs": [
+      "References"
+    ]
+  },
+  {
+    "objectID": "references.html#beyond-linear-functionals",
+    "href": "references.html#beyond-linear-functionals",
+    "title": "References",
+    "section": "Beyond linear functionals",
+    "text": "Beyond linear functionals\n\nvan der Laan, Luedtke & van der Laan (2025). Automatic Doubly-Robust Estimation for Smooth Functionals of the Outcome Mechanism. arXiv:2501.11868 — auto-DML for smooth functionals beyond linear.",
+    "crumbs": [
+      "References"
+    ]
+  },
+  {
+    "objectID": "references.html#semiparametric-estimation-context",
+    "href": "references.html#semiparametric-estimation-context",
+    "title": "References",
+    "section": "Semiparametric estimation context",
+    "text": "Semiparametric estimation context\n\nHubbard, van der Laan & Robins (2011). Estimation of the Causal Effects of Time-Varying Exposures. The delta-method-EIF reference for partial-parameter estimands like ATT and LASE.",
+    "crumbs": [
+      "References"
+    ]
+  },
+  {
+    "objectID": "references.html#software",
+    "href": "references.html#software",
+    "title": "References",
+    "section": "Software",
+    "text": "Software\n\nLee’s reference implementation. github.com/kaitlynjlee/boosting_for_rr — the implementation against which rieszboost is cross-checked. See examples/lee_schuler/COMPARISON.md for the parity report.",
+    "crumbs": [
+      "References"
+    ]
+  },
+  {
+    "objectID": "quickstart.html",
+    "href": "quickstart.html",
+    "title": "Quickstart — ATE in 30 lines",
+    "section": "",
+    "text": "This page fits a Riesz representer for the average treatment effect on a synthetic dataset, end to end. Pick the language tab you want — your choice persists across the whole site.",
+    "crumbs": [
+      "Quickstart — ATE in 30 lines"
+    ]
+  },
+  {
+    "objectID": "quickstart.html#simulate",
+    "href": "quickstart.html#simulate",
+    "title": "Quickstart — ATE in 30 lines",
+    "section": "Simulate",
+    "text": "Simulate\nA binary treatment with covariate-driven assignment and known propensity \\(\\pi(x)\\). We will recover \\(\\alpha_0(a, x) = a/\\pi(x) - (1-a)/(1-\\pi(x))\\) without ever estimating \\(\\pi\\).\n\nPythonR\n\n\n\nimport numpy as np\nimport pandas as pd\nfrom rieszboost import RieszBooster, ATE\n\nrng = np.random.default_rng(0)\nn = 4000\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(-0.02 * x - x**2 + 4 * np.log(x + 0.3) + 1.5)))\na = rng.binomial(1, pi)\ndf = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\ndf.head()\n\n     a         x\n0  1.0  0.636962\n1  0.0  0.269787\n2  0.0  0.040974\n3  0.0  0.016528\n4  0.0  0.813270\n\n\n\n\n\nset.seed(0)\nn  &lt;- 4000\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\nhead(df)\n\n  a         x\n1 1 0.8966972\n2 0 0.2655087\n3 0 0.3721239\n4 1 0.5728534\n5 1 0.9082078\n6 1 0.2016819",
+    "crumbs": [
+      "Quickstart — ATE in 30 lines"
+    ]
+  },
+  {
+    "objectID": "quickstart.html#fit",
+    "href": "quickstart.html#fit",
+    "title": "Quickstart — ATE in 30 lines",
+    "section": "Fit",
+    "text": "Fit\nRieszBooster is an sklearn-style estimator: configure on the constructor (the estimand owns its input schema, so no feature_keys= repeated on every call), then .fit(df). Early stopping uses an internal validation split sized by validation_fraction.\n\nPythonR\n\n\n\nbooster = RieszBooster(\n    estimand=ATE(treatment=\"a\", covariates=(\"x\",)),\n    n_estimators=2000,\n    learning_rate=0.05,\n    max_depth=4,\n    early_stopping_rounds=20,\n    validation_fraction=0.2,\n)\nbooster.fit(df)\n\nRieszBooster(early_stopping_rounds=20,\n             estimand=Estimand(feature_keys=('a', 'x'),\n                               m=&lt;function ATE.&lt;locals&gt;.m at 0x13a9e67a0&gt;,\n                               extra_keys=(),\n                               name='ATE',\n                               factory_spec={'args': {'covariates': ['x'],\n                                                      'treatment': 'a'},\n                                             'factory': 'ATE'}),\n             n_estimators=2000, validation_fraction=0.2)In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.RieszBoosteriFitted\n        \n            \n                Parameters\n                \n\n\n\n\nestimand\nEstimand(feat...tes': ['x']}})\n\n\n\nbackend\nNone\n\n\n\nloss\nNone\n\n\n\nn_estimators\n2000\n\n\n\nlearning_rate\n0.05\n\n\n\nmax_depth\n4\n\n\n\nreg_lambda\n1.0\n\n\n\nsubsample\n1.0\n\n\n\nearly_stopping_rounds\n20\n\n\n\nvalidation_fraction\n0.2\n\n\n\ninit\nNone\n\n\n\nrandom_state\n0\n\n\n\n\n            \n        \n    \n\nprint(f\"stopped at iteration {booster.best_iteration_}, \"\n      f\"best held-out Riesz loss = {booster.best_score_:.4f}\")\n\nstopped at iteration 806, best held-out Riesz loss = -6.9750\n\n\n\n\n\nbooster &lt;- RieszBooster$new(\n  estimand = ATE(treatment = \"a\", covariates = \"x\"),\n  n_estimators = 2000L,\n  learning_rate = 0.05,\n  max_depth = 4L,\n  early_stopping_rounds = 20L,\n  validation_fraction = 0.2\n)\nbooster$fit(df)\ncat(sprintf(\n  \"stopped at iteration %d, best held-out Riesz loss = %.4f\\n\",\n  reticulate::py_to_r(booster$py$best_iteration_),\n  reticulate::py_to_r(booster$py$best_score_)\n))\n\nstopped at iteration 219, best held-out Riesz loss = -5.8905",
+    "crumbs": [
+      "Quickstart — ATE in 30 lines"
+    ]
+  },
+  {
+    "objectID": "quickstart.html#predict-and-compare-to-the-closed-form-representer",
+    "href": "quickstart.html#predict-and-compare-to-the-closed-form-representer",
+    "title": "Quickstart — ATE in 30 lines",
+    "section": "Predict and compare to the closed-form representer",
+    "text": "Predict and compare to the closed-form representer\nThis is a synthetic example, so we have access to \\(\\alpha_0\\) and can score the fit directly.\n\nPythonR\n\n\n\nalpha_hat  = booster.predict(df)\ntrue_alpha = a / pi - (1 - a) / (1 - pi)\nprint(f\"corr(α̂, α₀) = {np.corrcoef(alpha_hat, true_alpha)[0, 1]:.3f}\")\n\ncorr(α̂, α₀) = 0.934\n\nprint(f\"RMSE         = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}\")\n\nRMSE         = 0.973\n\n\n\n\n\nalpha_hat  &lt;- booster$predict(df)\ntrue_alpha &lt;- a / pi - (1 - a) / (1 - pi)\ncat(sprintf(\"corr(alpha_hat, alpha_0) = %.3f\\n\",\n            cor(alpha_hat, true_alpha)))\n\ncorr(alpha_hat, alpha_0) = 0.962\n\ncat(sprintf(\"RMSE                     = %.3f\\n\",\n            sqrt(mean((alpha_hat - true_alpha)^2))))\n\nRMSE                     = 0.768",
+    "crumbs": [
+      "Quickstart — ATE in 30 lines"
+    ]
+  },
+  {
+    "objectID": "quickstart.html#visual-sanity-check",
+    "href": "quickstart.html#visual-sanity-check",
+    "title": "Quickstart — ATE in 30 lines",
+    "section": "Visual sanity check",
+    "text": "Visual sanity check\n\nPythonR\n\n\n\nimport matplotlib.pyplot as plt\n\nMatplotlib is building the font cache; this may take a moment.\n\nfig, ax = plt.subplots()\nax.scatter(true_alpha, alpha_hat, s=4, alpha=0.4)\nlim = max(abs(true_alpha).max(), abs(alpha_hat).max())\nax.plot([-lim, lim], [-lim, lim], \"k--\", lw=1)\nax.set_xlabel(r\"$\\alpha_0$ (closed-form)\")\nax.set_ylabel(r\"$\\hat\\alpha$ (rieszboost)\")\nplt.show()\n\n\n\n\nEstimated Riesz representer vs. the closed-form ground truth on the synthetic ATE DGP.\n\n\n\n\n\n\n\nlim &lt;- max(abs(c(true_alpha, alpha_hat)))\nplot(true_alpha, alpha_hat, pch = 16, cex = 0.4, col = adjustcolor(\"black\", 0.4),\n     xlim = c(-lim, lim), ylim = c(-lim, lim),\n     xlab = expression(alpha[0]~\"(closed-form)\"),\n     ylab = expression(hat(alpha)~\"(rieszboost)\"))\nabline(0, 1, lty = 2)\n\n\n\n\nEstimated Riesz representer vs. the closed-form ground truth (R).",
+    "crumbs": [
+      "Quickstart — ATE in 30 lines"
+    ]
+  },
+  {
+    "objectID": "quickstart.html#diagnostics",
+    "href": "quickstart.html#diagnostics",
+    "title": "Quickstart — ATE in 30 lines",
+    "section": "Diagnostics",
+    "text": "Diagnostics\nAlways inspect the fit before using \\(\\hat\\alpha\\) downstream. .diagnose() reports the magnitude distribution, near-positivity warnings, and the held-out Riesz loss.\n\nPythonR\n\n\n\nprint(booster.diagnose(df).summary())\n\nRiesz representer diagnostics (n=4000):\n  RMS magnitude   : 2.4012\n  mean            : -0.0288\n  min / max       : -6.6833 / 28.4296\n  |alpha| quantiles:\n     0.50: 1.5022\n     0.90: 3.5526\n     0.99: 6.8238\n     1.00: 28.4296\n  extreme rows    : 0/4000 (0.00%) with |alpha| &gt; 30.0\n  held-out Riesz  : -8.0257\n\n\n\n\n\ncat(booster$diagnose(df)$summary)\n\nRiesz representer diagnostics (n=4000):\n  RMS magnitude   : 2.1413\n  mean            : -0.0560\n  min / max       : -5.8936 / 10.4960\n  |alpha| quantiles:\n     0.50: 1.4529\n     0.90: 3.2188\n     0.99: 5.2775\n     1.00: 10.4960\n  extreme rows    : 0/4000 (0.00%) with |alpha| &gt; 30.0\n  held-out Riesz  : -6.4257",
+    "crumbs": [
+      "Quickstart — ATE in 30 lines"
+    ]
+  },
+  {
+    "objectID": "quickstart.html#where-next",
+    "href": "quickstart.html#where-next",
+    "title": "Quickstart — ATE in 30 lines",
+    "section": "Where next",
+    "text": "Where next\n\nFor inference (TMLE / one-step / DML), out-of-fold predictions via scikit-learn integration.\nBuilt-ins beyond ATE and how to write your own: estimands.\nReading .diagnose() carefully + tuning recipes: diagnostics and tuning.",
+    "crumbs": [
+      "Quickstart — ATE in 30 lines"
+    ]
+  },
+  {
+    "objectID": "install.html",
+    "href": "install.html",
+    "title": "Install",
+    "section": "",
+    "text": "The Python package is the source of truth — install it first whether you plan to use Python or R.\ngit clone https://github.com/alejandroschuler/rieszboost.git\ncd rieszboost\npython3 -m venv .venv\n.venv/bin/pip install -e python/\nxgboost requires OpenMP. On macOS:\nbrew install libomp\nLinux runners (including GitHub Actions ubuntu-latest) ship libgomp1 preinstalled, so no extra step is needed there.\n\n\n\nPythonR\n\n\n\nimport rieszboost\nfrom rieszboost import RieszBooster, ATE\nprint(\"rieszboost\", \"OK\")\n\nrieszboost OK\n\n\n\n\n\nprint(\"rieszboost (R wrapper) OK\")\n\n[1] \"rieszboost (R wrapper) OK\"",
+    "crumbs": [
+      "Install"
+    ]
+  },
+  {
+    "objectID": "install.html#python",
+    "href": "install.html#python",
+    "title": "Install",
+    "section": "",
+    "text": "The Python package is the source of truth — install it first whether you plan to use Python or R.\ngit clone https://github.com/alejandroschuler/rieszboost.git\ncd rieszboost\npython3 -m venv .venv\n.venv/bin/pip install -e python/\nxgboost requires OpenMP. On macOS:\nbrew install libomp\nLinux runners (including GitHub Actions ubuntu-latest) ship libgomp1 preinstalled, so no extra step is needed there.\n\n\n\nPythonR\n\n\n\nimport rieszboost\nfrom rieszboost import RieszBooster, ATE\nprint(\"rieszboost\", \"OK\")\n\nrieszboost OK\n\n\n\n\n\nprint(\"rieszboost (R wrapper) OK\")\n\n[1] \"rieszboost (R wrapper) OK\"",
+    "crumbs": [
+      "Install"
+    ]
+  },
+  {
+    "objectID": "install.html#r-wrapper-optional",
+    "href": "install.html#r-wrapper-optional",
+    "title": "Install",
+    "section": "R wrapper (optional)",
+    "text": "R wrapper (optional)\nThe R package is a thin R6 mirror around the Python implementation via reticulate. It does not require a separate install of any algorithmic dependency — everything runs in the Python venv.\nThree steps the first time you use it:\n\nInstall the R package dependencies (reticulate, R6):\ninstall.packages(c(\"reticulate\", \"R6\"))\nEither install the R wrapper as a package or dev-load it from the source tree. For this guide we dev-load:\npkgload::load_all(\"r/rieszboost\")\nPoint reticulate at the Python venv where you installed rieszboost:\nuse_python_rieszboost(\".venv/bin/python\")\nYou can also set the env var RETICULATE_PYTHON before R starts:\nexport RETICULATE_PYTHON=/path/to/rieszboost/.venv/bin/python\n\nAfter that, every R example in this guide runs verbatim.\n\n\n\n\n\n\nNoteWhat R covers\n\n\n\nThe R wrapper exports every public Python class except the symbolic tracer for custom m() (see estimands and r-interface). All built-in estimands, both losses, both backends, and the entire RieszBooster API are first-class in R.",
+    "crumbs": [
+      "Install"
+    ]
+  },
+  {
+    "objectID": "install.html#tests",
+    "href": "install.html#tests",
+    "title": "Install",
+    "section": "Tests",
+    "text": "Tests\n.venv/bin/python -m pytest python/tests -v\n\nRscript -e '\n  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), \".venv/bin/python\"))\n  pkgload::load_all(\"r/rieszboost\")\n  testthat::test_dir(\"r/rieszboost/tests/testthat\")\n'",
+    "crumbs": [
+      "Install"
+    ]
+  },
+  {
+    "objectID": "estimands.html",
+    "href": "estimands.html",
+    "title": "Estimands",
+    "section": "",
+    "text": "An estimand in rieszboost is a self-contained description of the linear functional you want to fit. It carries (a) the column names \\(\\alpha\\) is indexed by, (b) any per-row payload columns \\(m\\) needs (e.g. pre-sampled treatments for stochastic interventions), and (c) the opaque m(z, alpha) callable itself. The RieszBooster reads this off the estimand object — there’s no separate feature_keys= argument.\nThis page covers the six built-in factories and how to write your own.",
+    "crumbs": [
+      "Estimands"
+    ]
+  },
+  {
+    "objectID": "estimands.html#built-in-factories",
+    "href": "estimands.html#built-in-factories",
+    "title": "Estimands",
+    "section": "Built-in factories",
+    "text": "Built-in factories\n\n\n\nFactory\n\\(m(z, \\alpha)\\)\nNotes\n\n\n\n\nATE(treatment, covariates)\n\\(\\alpha(1, x) - \\alpha(0, x)\\)\nAverage treatment effect — see examples/lee_schuler/binary_dgp.py\n\n\nATT(treatment, covariates)\n\\(a \\cdot (\\alpha(1, x) - \\alpha(0, x))\\)\nATT partial parameter. Full ATT divides by \\(P(A=1)\\) — combine with a delta-method EIF downstream. See examples/lee_schuler/binary_dgp.py.\n\n\nTSM(level, treatment, covariates)\n\\(\\alpha(\\text{level}, x)\\)\nTreatment-specific mean — see examples/tsm.py\n\n\nAdditiveShift(delta, ...)\n\\(\\alpha(a + \\delta, x) - \\alpha(a, x)\\)\nContinuous-treatment shift effect — see examples/lee_schuler/continuous_dgp.py\n\n\nLocalShift(delta, threshold, ...)\n\\(\\mathbf{1}\\{a &lt; \\text{threshold}\\} \\cdot (\\alpha(a + \\delta, x) - \\alpha(a, x))\\)\nLASE partial parameter; same caveat as ATT. See examples/lee_schuler/continuous_dgp.py.\n\n\nStochasticIntervention(samples_key, ...)\n\\(\\frac{1}{K} \\sum_k \\alpha(a'_k, x)\\)\nIPSI via Monte Carlo over the intervention density — see examples/stochastic_intervention.py\n\n\n\nSame call sites in both languages — kwargs match.\n\nPythonR\n\n\n\nfrom rieszboost import (\n    ATE, ATT, TSM, AdditiveShift, LocalShift, StochasticIntervention,\n)\nATE(treatment=\"a\", covariates=(\"x\",)).name\n\n'ATE'\n\nTSM(level=1, treatment=\"a\", covariates=(\"x\",)).name\n\n'TSM(level=1)'\n\nLocalShift(delta=0.3, threshold=0.7).name\n\n'LocalShift(delta=0.3, threshold=0.7)'\n\n\n\n\n\nATE(treatment = \"a\", covariates = \"x\")\n\nEstimand(feature_keys=('a', 'x'), m=&lt;function ATE.&lt;locals&gt;.m at 0x7fed6c562c00&gt;, extra_keys=(), name='ATE', factory_spec={'factory': 'ATE', 'args': {'treatment': 'a', 'covariates': ['x']}})\n signature: (z, alpha)\n\nTSM(level = 1, treatment = \"a\", covariates = \"x\")\n\nEstimand(feature_keys=('a', 'x'), m=&lt;function TSM.&lt;locals&gt;.m at 0x7fed6c562b60&gt;, extra_keys=(), name='TSM(level=1.0)', factory_spec={'factory': 'TSM', 'args': {'level': 1.0, 'treatment': 'a', 'covariates': ['x']}})\n signature: (z, alpha)\n\nLocalShift(delta = 0.3, threshold = 0.7)\n\nEstimand(feature_keys=('a', 'x'), m=&lt;function LocalShift.&lt;locals&gt;.m at 0x7fed6c58d3a0&gt;, extra_keys=(), name='LocalShift(delta=0.3, threshold=0.7)', factory_spec={'factory': 'LocalShift', 'args': {'delta': 0.3, 'threshold': 0.7, 'treatment': 'a', 'covariates': ['x']}})\n signature: (z, alpha)",
+    "crumbs": [
+      "Estimands"
+    ]
+  },
+  {
+    "objectID": "estimands.html#stochastic-intervention-pre-sample-then-fit",
+    "href": "estimands.html#stochastic-intervention-pre-sample-then-fit",
+    "title": "Estimands",
+    "section": "Stochastic intervention: pre-sample, then fit",
+    "text": "Stochastic intervention: pre-sample, then fit\nStochasticIntervention is the IPSI workhorse. It needs a per-row list of treatment values drawn from your intervention density. Build that column once, before fitting.\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom rieszboost import RieszBooster, StochasticIntervention\n\nrng = np.random.default_rng(0)\nn = 1000\nx = rng.uniform(0, 1, n)\na = rng.uniform(0, 1, n)\ndf = pd.DataFrame({\"a\": a, \"x\": x})\n\n# Modified-treatment policy: a' ~ Normal(a + 0.1, 0.2), 20 samples per row\ndf[\"shift_samples\"] = [\n    rng.normal(a_i + 0.1, 0.2, size=20) for a_i in df[\"a\"]\n]\n\nbooster = RieszBooster(\n    estimand=StochasticIntervention(samples_key=\"shift_samples\"),\n    n_estimators=200, learning_rate=0.05, max_depth=4,\n).fit(df)\n\nbooster.predict(df).mean()\n\nnp.float32(0.35250518)\n\n\n\n\n\nset.seed(0)\nn  &lt;- 1000\nx  &lt;- runif(n); a &lt;- runif(n)\ndf &lt;- data.frame(a = a, x = x)\n\n# list-column with 20 samples per row from Normal(a + 0.1, 0.2)\ndf$shift_samples &lt;- lapply(df$a, function(a_i) rnorm(20, a_i + 0.1, 0.2))\n\nbooster &lt;- RieszBooster$new(\n  estimand = StochasticIntervention(samples_key = \"shift_samples\"),\n  n_estimators = 200L, learning_rate = 0.05, max_depth = 4L\n)\nbooster$fit(df)\nmean(booster$predict(df))\n\n[1] 0.3499112\n\n\n\n\n\nThe extra_keys field on the estimand declares which payload columns to pull through; in this case it’s (\"shift_samples\",). RieszBooster handles the wiring.",
+    "crumbs": [
+      "Estimands"
+    ]
+  },
+  {
+    "objectID": "estimands.html#custom-estimands",
+    "href": "estimands.html#custom-estimands",
+    "title": "Estimands",
+    "section": "Custom estimands",
+    "text": "Custom estimands\nIf none of the built-ins fit your functional, write m(z, alpha) directly and wrap it in an Estimand. The library traces \\(m\\) symbolically to extract the linear-form structure.\nThe rule: \\(m\\) must be a finite linear combination of point evaluations of \\(\\alpha\\), built only with +, -, scalar *, and calls to alpha(...). Anything outside that algebra (squaring, adding constants, integrals) raises immediately.\n\n\n\n\n\n\nNotePython-only\n\n\n\nCustom m() requires the symbolic tracer, which is currently Python-only. R users have two options: (1) use a built-in factory, or (2) define your m() in Python and call it from R via reticulate. See r-interface for the recipe.\n\n\n\nfrom rieszboost import Estimand, RieszBooster\nimport numpy as np, pandas as pd\n\n# A weighted contrast: 2x the ATE at level a=2 minus the level at a=1.\ndef m_weighted_contrast(z, alpha):\n    return 2.0 * (alpha(a=2, x=z[\"x\"]) - alpha(a=0, x=z[\"x\"])) \\\n           - alpha(a=1, x=z[\"x\"])\n\nest = Estimand(\n    feature_keys=(\"a\", \"x\"),\n    m=m_weighted_contrast,\n    name=\"WeightedContrast\",\n)\nprint(est)\n\nEstimand(feature_keys=('a', 'x'), m=&lt;function m_weighted_contrast at 0x7fed4f9832e0&gt;, extra_keys=(), name='WeightedContrast', factory_spec=None)\n\n\nThe estimand is now a first-class object you can pass to RieszBooster:\n\nrng = np.random.default_rng(0)\ndf = pd.DataFrame({\n    \"a\": rng.choice([0, 1, 2], size=500).astype(float),\n    \"x\": rng.uniform(0, 1, 500),\n})\n\nbooster = RieszBooster(estimand=est, n_estimators=100, max_depth=3).fit(df)\nbooster.predict(df)[:5]\n\narray([ 4.630866 , -2.446456 , -2.5141447, -4.992177 , -4.992177 ],\n      dtype=float32)\n\n\n\nWhat the tracer rejects\nThe error messages are designed to point you at the offending operation. A few examples:\n\nfrom rieszboost import Estimand, RieszBooster, trace\n\ndef bad_squared(z, alpha):\n    return alpha(a=1, x=z[\"x\"]) ** 2  # nonlinear in alpha\n\ntrace(Estimand(feature_keys=(\"a\", \"x\"), m=bad_squared), {\"a\": 0, \"x\": 0.5})\n\nTypeError: unsupported operand type(s) for ** or pow(): 'LinearForm' and 'int'\n\n\n\ndef bad_constant(z, alpha):\n    return alpha(a=1, x=z[\"x\"]) + 1.0  # constant offset\n\ntrace(Estimand(feature_keys=(\"a\", \"x\"), m=bad_constant), {\"a\": 0, \"x\": 0.5})\n\nTypeError: Cannot add a scalar to a LinearForm — m must be linear in alpha (no constant offsets).\n\n\nIf the operation you actually want is genuinely outside the linear-form algebra (a derivative or integral of \\(\\alpha\\), say), you’ve left the regime the augmented-data approach can handle. The roadmap includes a slow path for general \\(m\\) via base-learner gradient boosting; today, restate the estimand if possible (e.g. Monte-Carlo-sample the intervention density and use StochasticIntervention).",
+    "crumbs": [
+      "Estimands"
+    ]
+  },
+  {
+    "objectID": "estimands.html#feature-keys-extra-keys",
+    "href": "estimands.html#feature-keys-extra-keys",
+    "title": "Estimands",
+    "section": "Feature keys, extra keys",
+    "text": "Feature keys, extra keys\nFor reference, the Estimand dataclass has four fields:\n@dataclass\nclass Estimand:\n    feature_keys: tuple[str, ...]      # columns alpha is indexed by\n    m: Callable[..., Any]              # the linear functional\n    extra_keys: tuple[str, ...] = ()   # per-row payload columns (e.g. shift_samples)\n    name: str = \"custom\"\n    factory_spec: dict | None = None   # set by built-in factories so the estimand\n                                       # round-trips through save / load\nRieszBooster reads feature_keys + extra_keys off the estimand at fit time to construct the row dicts passed to m. Stick to that contract and the booster handles everything else.",
+    "crumbs": [
+      "Estimands"
+    ]
+  },
+  {
+    "objectID": "developing.html",
+    "href": "developing.html",
+    "title": "Developing rieszboost",
+    "section": "",
+    "text": "rieszboost/\n├── python/\n│   ├── rieszboost/              # the library\n│   │   ├── __init__.py            # public API surface, lazy imports\n│   │   ├── estimator.py           # RieszBooster class (sklearn BaseEstimator)\n│   │   ├── estimand.py            # ATE, ATT, TSM, AdditiveShift,\n│   │   │                          # LocalShift, StochasticIntervention, Estimand\n│   │   ├── augmentation.py        # build_augmented + AugmentedDataset\n│   │   ├── losses.py              # LossSpec protocol, SquaredLoss, KLLoss\n│   │   ├── diagnostics.py         # diagnose() + Diagnostics dataclass\n│   │   ├── tracer.py              # LinearForm, Tracer, trace\n│   │   └── backends/              # swappable plugin architecture\n│   │       ├── base.py              # Backend, Predictor, FitResult protocols\n│   │       ├── xgboost.py           # XGBoostBackend (default)\n│   │       └── sklearn.py           # SklearnBackend (any sklearn regressor)\n│   ├── tests/                   # pytest suite\n│   └── pyproject.toml\n├── r/rieszboost/               # R6 wrapper via reticulate\n├── examples/                   # Lee-Schuler reproductions\n├── docs/                       # this user guide (Quarto website)\n├── .github/workflows/docs.yml  # CI: render + deploy on push to main\n├── .githooks/pre-commit        # enforces docs-stay-in-sync rule\n├── README.md\n└── CLAUDE.md                   # implementation-side notes",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "developing.html#repo-layout",
+    "href": "developing.html#repo-layout",
+    "title": "Developing rieszboost",
+    "section": "",
+    "text": "rieszboost/\n├── python/\n│   ├── rieszboost/              # the library\n│   │   ├── __init__.py            # public API surface, lazy imports\n│   │   ├── estimator.py           # RieszBooster class (sklearn BaseEstimator)\n│   │   ├── estimand.py            # ATE, ATT, TSM, AdditiveShift,\n│   │   │                          # LocalShift, StochasticIntervention, Estimand\n│   │   ├── augmentation.py        # build_augmented + AugmentedDataset\n│   │   ├── losses.py              # LossSpec protocol, SquaredLoss, KLLoss\n│   │   ├── diagnostics.py         # diagnose() + Diagnostics dataclass\n│   │   ├── tracer.py              # LinearForm, Tracer, trace\n│   │   └── backends/              # swappable plugin architecture\n│   │       ├── base.py              # Backend, Predictor, FitResult protocols\n│   │       ├── xgboost.py           # XGBoostBackend (default)\n│   │       └── sklearn.py           # SklearnBackend (any sklearn regressor)\n│   ├── tests/                   # pytest suite\n│   └── pyproject.toml\n├── r/rieszboost/               # R6 wrapper via reticulate\n├── examples/                   # Lee-Schuler reproductions\n├── docs/                       # this user guide (Quarto website)\n├── .github/workflows/docs.yml  # CI: render + deploy on push to main\n├── .githooks/pre-commit        # enforces docs-stay-in-sync rule\n├── README.md\n└── CLAUDE.md                   # implementation-side notes",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "developing.html#run-tests",
+    "href": "developing.html#run-tests",
+    "title": "Developing rieszboost",
+    "section": "Run tests",
+    "text": "Run tests\n# Python (51 tests at the time of writing)\n.venv/bin/python -m pytest python/tests -v\n\n# R (parity test included)\nRscript -e '\n  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), \".venv/bin/python\"))\n  pkgload::load_all(\"r/rieszboost\")\n  testthat::test_dir(\"r/rieszboost/tests/testthat\")\n'\nxgboost requires libomp on macOS — brew install libomp once.",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "developing.html#tracer-briefly",
+    "href": "developing.html#tracer-briefly",
+    "title": "Developing rieszboost",
+    "section": "Tracer, briefly",
+    "text": "Tracer, briefly\nThe user writes m(z, alpha) opaquely with +, -, scalar *, and calls to alpha(...). The library passes a Tracer in as alpha; each call returns a single-term LinearForm; the user’s m composes these via Python operator overloading. The result is a LinearForm whose .as_pairs() returns [(coef, point), ...] — exactly what build_augmented needs to construct the augmented dataset. Anything outside the linear-form algebra (squaring, integrals, constants) raises immediately at trace time, which keeps users on the rails of the fast path. See python/rieszboost/tracer.py for the full implementation (~130 lines, no external deps).",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "developing.html#adding-a-new-estimand-factory",
+    "href": "developing.html#adding-a-new-estimand-factory",
+    "title": "Developing rieszboost",
+    "section": "Adding a new estimand factory",
+    "text": "Adding a new estimand factory\nA factory is a function that returns an Estimand. Pattern from estimand.py:\ndef MyEstimand(param, treatment=\"a\", covariates=(\"x\",)) -&gt; Estimand:\n    cov = tuple(covariates)\n    def m(z, alpha):\n        x_kwargs = {k: z[k] for k in cov}\n        # ...build a LinearForm using +, -, scalar*, alpha(...)...\n        return alpha(**{treatment: param, **x_kwargs})\n    return Estimand(feature_keys=(treatment, *cov), m=m, name=f\"MyEstimand({param})\")\nThen:\n\nExport from python/rieszboost/__init__.py (add to the imports and to __all__).\nAdd an R wrapper in r/rieszboost/R/rieszboost.R (one-liner that forwards to the Python factory) and @export it.\nUpdate docs/estimands.qmd with a row in the built-ins table and a runnable example in both languages.\nAdd a test under python/tests/.\n\nThe pre-commit hook will block step (1)/(2) if you forget step (3).",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "developing.html#adding-a-new-lossspec",
+    "href": "developing.html#adding-a-new-lossspec",
+    "title": "Developing rieszboost",
+    "section": "Adding a new LossSpec",
+    "text": "Adding a new LossSpec\nImplement the seven-method LossSpec protocol from losses.py. SquaredLoss (35 lines) is the simplest template; KLLoss (45 lines) shows how to handle a non-identity link with overflow protection.\n\nAdd the class to python/rieszboost/losses.py.\nExport from __init__.py.\nAdd a one-liner R wrapper.\nAdd a runnable example to docs/backends-and-losses.qmd.\nTest with pytest python/tests/test_bregman.py.",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "developing.html#adding-a-new-backend",
+    "href": "developing.html#adding-a-new-backend",
+    "title": "Developing rieszboost",
+    "section": "Adding a new backend",
+    "text": "Adding a new backend\nImplement the Backend protocol in python/rieszboost/backends/base.py — one method, fit_augmented(...), returning a FitResult whose predictor implements predict_eta and predict_alpha. XGBoostBackend and SklearnBackend are the two existing templates; the lightgbm backend is on the roadmap and will follow the xgboost template closely.\nThe backend doesn’t need to know about the estimand or the tracer — it sees a finished AugmentedDataset and a LossSpec and returns a fitted predictor.",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "developing.html#living-doc-rule",
+    "href": "developing.html#living-doc-rule",
+    "title": "Developing rieszboost",
+    "section": "Living-doc rule",
+    "text": "Living-doc rule\nTwo related rules in CLAUDE.md:\n\nREADME.md is the public-facing contract. If a change to the library makes any line of the README false, the change is not done until the README is fixed in the same edit.\nThe user guide under docs/ is the deeper reference. The same rule applies — public-API changes update the relevant .qmd page (in both the Python and R tabs where the page is bilingual) in the same commit.\n\nThis is enforced by the pre-commit hook at .githooks/pre-commit. Activate per clone:\ngit config core.hooksPath .githooks\nThe hook looks at staged files; if any of these are modified:\n\npython/rieszboost/{__init__,estimator,estimand,augmentation,losses,diagnostics,tracer}.py\npython/rieszboost/backends/*.py\nr/rieszboost/R/*.R\n\nthen at least one of these must also be staged:\n\ndocs/*.qmd\ndocs/_quarto.yml\nREADME.md\n\nOtherwise the commit is rejected with a clear error pointing at the unmatched files.\nFor genuinely doc-irrelevant changes (internal refactor that doesn’t touch any signature, test additions, comment fixes), bypass with git commit --no-verify. That’s the explicit escape hatch — there’s no shame in using it when the situation calls for it.",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "developing.html#local-docs-render",
+    "href": "developing.html#local-docs-render",
+    "title": "Developing rieszboost",
+    "section": "Local docs render",
+    "text": "Local docs render\nquarto preview docs/        # live-reload at http://localhost:port\nquarto render docs/         # one-shot build to docs/_site/\nopen docs/_site/index.html\nRenders take ~30s with _freeze/ cache (which IS committed to git), ~3 minutes cold. Editing a single .qmd only re-renders that page.",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "developing.html#ci",
+    "href": "developing.html#ci",
+    "title": "Developing rieszboost",
+    "section": "CI",
+    "text": "CI\nThe workflow at .github/workflows/docs.yml runs on push to main when any of docs/, python/, examples/, or the workflow itself changes. It:\n\nChecks out the repo (which restores the _freeze/ cache).\nInstalls Python 3.11, then pip install -e python/ plus matplotlib.\nInstalls R + knitr, rmarkdown, reticulate.\nSets up Quarto.\nRenders docs/ (re-executing only chapters whose source changed).\nPublishes the rendered _site/ to the gh-pages branch.\n\nThe published site lives at https://alejandroschuler.github.io/rieszboost/.",
+    "crumbs": [
+      "Developing rieszboost"
+    ]
+  },
+  {
+    "objectID": "backends-and-losses.html",
+    "href": "backends-and-losses.html",
+    "title": "Backends and losses",
+    "section": "",
+    "text": "RieszBooster decouples three orthogonal concerns: the estimand (what functional you’re after), the loss (which Bregman-Riesz objective minimizes the right thing for that functional), and the backend (what does the actual gradient boosting). The defaults — XGBoostBackend + SquaredLoss — are right for almost every problem; this page covers when and how to swap them.",
+    "crumbs": [
+      "Backends and losses"
+    ]
+  },
+  {
+    "objectID": "backends-and-losses.html#the-default-backend-xgboostbackend",
+    "href": "backends-and-losses.html#the-default-backend-xgboostbackend",
+    "title": "Backends and losses",
+    "section": "The default backend: XGBoostBackend",
+    "text": "The default backend: XGBoostBackend\nData augmentation + xgboost custom objective. Each row \\(z_i\\) contributes (a) itself with quadratic coefficient \\(a=1\\), \\(b=0\\) and (b) a counterfactual augmented row at every point \\(\\alpha\\) is evaluated at by \\(m(z_i, \\cdot)\\), with quadratic coefficient \\(a=0\\) and linear coefficient \\(b = -2 \\cdot \\text{coef}\\). The Riesz loss is then a per-row weighted regression that xgboost handles via its custom objective interface.\nTwo knobs on the backend itself:\nXGBoostBackend(hessian_floor=2.0, gradient_only=False)\n\nhessian_floor — a lower bound on the per-row Hessian fed to xgboost. Counterfactual rows have \\(H = 2a = 0\\); without a floor, xgboost’s leaf-weight Newton step (-G/(H+λ)) is degenerate at those leaves. The default of 2.0 matches the natural Hessian on original rows. Almost never needs tuning.\ngradient_only — short-circuit the second-order Hessian and use H = 1 everywhere (Lee-Schuler Algorithm 2 / Friedman 2001 first-order gradient boosting). Empirically worse than the default at matched hyperparameters; the second-order leaf weighting helps even though our Hessian is partly artificial. Reach for gradient_only=True only when reproducing the reference implementation byte-for-byte.\n\nmax_depth, reg_lambda, subsample, learning_rate, n_estimators, early_stopping_rounds are passed in from RieszBooster constructor — they’re standard xgboost knobs; see diagnostics and tuning for guidance.",
+    "crumbs": [
+      "Backends and losses"
+    ]
+  },
+  {
+    "objectID": "backends-and-losses.html#sklearnbackend-gradient-boosting-on-any-base-learner",
+    "href": "backends-and-losses.html#sklearnbackend-gradient-boosting-on-any-base-learner",
+    "title": "Backends and losses",
+    "section": "SklearnBackend: gradient boosting on any base learner",
+    "text": "SklearnBackend: gradient boosting on any base learner\nIf you want a non-tree base learner — kernel ridge, an MLP, a custom regressor — pass a base_learner_factory: a zero-arg callable that returns a fresh sklearn-compatible .fit(X, y)/.predict(X) regressor each round.\nThe backend implements first-order gradient boosting with line search: per round, fit the weak learner to the negative gradient of the Riesz loss, then closed-form solve for the optimal step size under a quadratic surrogate, then update the running prediction.\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom sklearn.kernel_ridge import KernelRidge\nfrom rieszboost import RieszBooster, ATE, SklearnBackend\n\nrng = np.random.default_rng(0)\nn = 1000\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(8 * x - 4)))\na = rng.binomial(1, pi)\ndf = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\n\nbooster = RieszBooster(\n    estimand=ATE(),\n    backend=SklearnBackend(lambda: KernelRidge(alpha=1.0, kernel=\"rbf\", gamma=2.0)),\n    n_estimators=80,\n    learning_rate=0.05,\n    early_stopping_rounds=10,\n    validation_fraction=0.2,\n).fit(df)\n\nalpha_hat  = booster.predict(df)\ntrue_alpha = a / pi - (1 - a) / (1 - pi)\nprint(f\"corr = {np.corrcoef(alpha_hat, true_alpha)[0,1]:.3f}, \"\n      f\"RMSE = {np.sqrt(np.mean((alpha_hat - true_alpha)**2)):.3f}\")\n\ncorr = 0.913, RMSE = 1.663\n\n\n\n\n\nset.seed(0)\nn  &lt;- 1000\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(8 * x - 4)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\n# Build the Python factory directly via reticulate so we get a fresh sklearn\n# object each call. Passing an R function would also work — reticulate handles\n# R-callable -&gt; Python-callable conversion.\nsk_kr &lt;- reticulate::import(\"sklearn.kernel_ridge\", convert = FALSE)\nfactory &lt;- reticulate::py_func(function() sk_kr$KernelRidge(alpha = 1.0,\n                                                             kernel = \"rbf\",\n                                                             gamma = 2.0))\n\nbooster &lt;- RieszBooster$new(\n  estimand = ATE(),\n  backend = SklearnBackend(base_learner_factory = factory),\n  n_estimators = 80L,\n  learning_rate = 0.05,\n  early_stopping_rounds = 10L,\n  validation_fraction = 0.2\n)\nbooster$fit(df)\n\nalpha_hat  &lt;- booster$predict(df)\ntrue_alpha &lt;- a / pi - (1 - a) / (1 - pi)\ncat(sprintf(\"corr = %.3f, RMSE = %.3f\\n\",\n            cor(alpha_hat, true_alpha),\n            sqrt(mean((alpha_hat - true_alpha)^2))))\n\ncorr = 0.928, RMSE = 1.579\n\n\n\n\n\nSklearnBackend is slower than XGBoostBackend (no native parallel tree splits) but the API surface is the same. It’s the right choice when (a) the data is genuinely better fit by something non-tree (e.g. smooth low-dimensional problems where kernel ridge dominates), or (b) you need to run inside an environment that can’t install xgboost.\n\n\n\n\n\n\nTipWhen to skip xgboost entirely\n\n\n\nSklearnBackend doesn’t import xgboost. If your environment is xgboost-hostile (alpine container, Python build with no OpenMP) you can ship rieszboost with SklearnBackend as the default by passing backend=SklearnBackend(...) to every RieszBooster and never installing xgboost. The library itself only lazy-imports xgboost.",
+    "crumbs": [
+      "Backends and losses"
+    ]
+  },
+  {
+    "objectID": "backends-and-losses.html#losses-squaredloss-and-klloss",
+    "href": "backends-and-losses.html#losses-squaredloss-and-klloss",
+    "title": "Backends and losses",
+    "section": "Losses: SquaredLoss and KLLoss",
+    "text": "Losses: SquaredLoss and KLLoss\nThe default SquaredLoss is the standard Lee-Schuler / Chernozhukov objective: \\(\\phi(t) = t^2\\), identity link \\(\\eta = \\alpha\\). Per-row loss \\(a \\cdot \\alpha^2 + b \\cdot \\alpha\\). This is the right choice for almost every estimand.\nKLLoss (\\(\\phi(t) = t \\log t\\), exp link \\(\\alpha = e^\\eta\\)) is for density-ratio targets — TSM, IPSI, anything where \\(\\alpha_0\\) is a non-negative density ratio. The exponential link guarantees \\(\\hat\\alpha &gt; 0\\) regardless of leaf updates, which can stabilize density-ratio fits where the squared loss would let \\(\\hat\\alpha\\) go negative through extrapolation.\n\nPythonR\n\n\n\nfrom rieszboost import KLLoss, TSM, RieszBooster\n\nbooster = RieszBooster(\n    estimand=TSM(level=1),\n    loss=KLLoss(max_eta=50),\n    n_estimators=300,\n    learning_rate=0.05,\n    max_depth=3,\n).fit(df)\n\nalpha_hat = booster.predict(df)\nprint(f\"min α̂ = {alpha_hat.min():.4f} (always ≥ 0 with KLLoss)\")\n\nmin α̂ = 0.1174 (always ≥ 0 with KLLoss)\n\nprint(f\"mean α̂ on treated rows = {alpha_hat[a == 1].mean():.3f}\")\n\nmean α̂ on treated rows = 1.845\n\n\n\n\n\nbooster &lt;- RieszBooster$new(\n  estimand = TSM(level = 1),\n  loss = KLLoss(max_eta = 50),\n  n_estimators = 300L,\n  learning_rate = 0.05,\n  max_depth = 3L\n)\nbooster$fit(df)\nalpha_hat &lt;- booster$predict(df)\ncat(sprintf(\"min alpha_hat = %.4f (always &gt;= 0 with KLLoss)\\n\",\n            min(alpha_hat)))\n\nmin alpha_hat = 0.1173 (always &gt;= 0 with KLLoss)\n\ncat(sprintf(\"mean alpha_hat on treated rows = %.3f\\n\",\n            mean(alpha_hat[a == 1])))\n\nmean alpha_hat on treated rows = 1.867\n\n\n\n\n\nKLLoss requires all augmented b coefficients to be \\(\\le 0\\) — equivalent to all \\(m\\)-coefficients being non-negative. Most density-ratio estimands satisfy this; it’s checked at fit time and raises with a clear error if you try KLLoss on (say) ATE.\n\n\n\n\n\n\nWarningWhen NOT to use KLLoss\n\n\n\nOn the augmented dataset, pure-counterfactual rows (a=0, b&lt;0) have no minimum in η under KL — leaf weights at low-overlap points can extrapolate. The squared loss is structurally more stable; reach for KL only when its positivity guarantee is genuinely needed.",
+    "crumbs": [
+      "Backends and losses"
+    ]
+  },
+  {
+    "objectID": "backends-and-losses.html#custom-losses",
+    "href": "backends-and-losses.html#custom-losses",
+    "title": "Backends and losses",
+    "section": "Custom losses",
+    "text": "Custom losses\n\n\n\n\n\n\nNotePython-only\n\n\n\nCustom LossSpec subclasses are currently Python-only. The R wrapper exposes SquaredLoss() and KLLoss(); for a custom loss in R, define it in Python and call from R via reticulate.\n\n\nThe LossSpec protocol is small. Implement six methods:\nclass LossSpec(Protocol):\n    name: str\n\n    def link_to_alpha(self, eta: np.ndarray) -&gt; np.ndarray:\n        \"\"\"Inverse link: convert boosted output η to α.\"\"\"\n    def alpha_to_eta(self, alpha):\n        \"\"\"Forward link: convert α to η (used for `init=` translation).\"\"\"\n    def loss_row(self, a, b, alpha):\n        \"\"\"Per-row loss in α space: a·ψ(α) + (b/2)·φ'(α).\"\"\"\n    def gradient(self, a, b, eta):\n        \"\"\"∂loss_row/∂η, using α = link_to_alpha(η).\"\"\"\n    def hessian(self, a, b, eta, hessian_floor):\n        \"\"\"∂²loss_row/∂η² (floored).\"\"\"\n    def default_init_alpha(self) -&gt; float:\n        \"\"\"Sensible α-space default for `init=` if user doesn't override.\"\"\"\n    def validate_coefficients(self, b: np.ndarray) -&gt; None:\n        \"\"\"Raise if (a, b) violate this loss's domain.\"\"\"\nSquaredLoss (35 lines) and KLLoss (45 lines) in python/rieszboost/losses.py are the templates. Anything you implement composes with both backends and every estimand without further changes.\nThe Bregman extension follows Hines & Miles (2510.16127) and Kato (2601.07752) — for the math, those are the references.",
+    "crumbs": [
+      "Backends and losses"
+    ]
+  },
+  {
+    "objectID": "diagnostics-and-tuning.html",
+    "href": "diagnostics-and-tuning.html",
+    "title": "Diagnostics and tuning",
+    "section": "",
+    "text": "Tuning \\(\\hat\\alpha\\) is different from tuning a regression model. The Riesz loss has no held-out reference (you don’t observe \\(\\alpha_0\\) on real data), so the validation curve from early_stopping_rounds is the signal during training. After the fit, .diagnose() surfaces failure modes — extreme tail values, near-positivity violations, single-point extrapolation — that often matter more for downstream variance than the bulk fit quality.\nThis page walks through .diagnose() on a deliberately under-tuned booster (so the warnings actually fire) and then maps each warning to the hyperparameter that fixes it.",
+    "crumbs": [
+      "Diagnostics and tuning"
+    ]
+  },
+  {
+    "objectID": "diagnostics-and-tuning.html#setup-a-low-overlap-dataset",
+    "href": "diagnostics-and-tuning.html#setup-a-low-overlap-dataset",
+    "title": "Diagnostics and tuning",
+    "section": "Setup: a low-overlap dataset",
+    "text": "Setup: a low-overlap dataset\nWe push the propensity close to 0 in part of the covariate space — exactly the regime where naive inverse-propensity weighting falls apart and where the booster’s tuning matters most.\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom rieszboost import RieszBooster, ATE\n\nrng = np.random.default_rng(0)\nn = 2000\nx = rng.uniform(0, 1, n)\n# Aggressive logit so π(x) ≈ 0 for small x\npi = 1 / (1 + np.exp(-(8.0 * x - 5.0)))\na = rng.binomial(1, pi)\ndf = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\nprint(f\"min π(x) = {pi.min():.3f}, fraction with π(x) &lt; 0.05 = {(pi &lt; 0.05).mean():.2f}\")\n\nmin π(x) = 0.007, fraction with π(x) &lt; 0.05 = 0.26\n\n\n\n\n\nset.seed(0)\nn  &lt;- 2000\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(8 * x - 5)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\ncat(sprintf(\"min pi(x) = %.3f, fraction with pi(x) &lt; 0.05 = %.2f\\n\",\n            min(pi), mean(pi &lt; 0.05)))\n\nmin pi(x) = 0.007, fraction with pi(x) &lt; 0.05 = 0.26",
+    "crumbs": [
+      "Diagnostics and tuning"
+    ]
+  },
+  {
+    "objectID": "diagnostics-and-tuning.html#a-deliberately-greedy-fit",
+    "href": "diagnostics-and-tuning.html#a-deliberately-greedy-fit",
+    "title": "Diagnostics and tuning",
+    "section": "A deliberately greedy fit",
+    "text": "A deliberately greedy fit\nDeep trees, no regularization, no early stopping — almost guaranteed to extrapolate badly in the low-π region.\n\nPythonR\n\n\n\ngreedy = RieszBooster(\n    estimand=ATE(),\n    n_estimators=300,\n    learning_rate=0.3,    # too high\n    max_depth=8,          # too deep\n    reg_lambda=0.0,       # no L2\n).fit(df)\n\nprint(greedy.diagnose(df).summary())\n\nRiesz representer diagnostics (n=2000):\n  RMS magnitude   : 2.4655\n  mean            : -0.1415\n  min / max       : -11.5966 / 19.8519\n  |alpha| quantiles:\n     0.50: 1.1422\n     0.90: 2.6658\n     0.99: 10.2367\n     1.00: 19.8519\n  extreme rows    : 0/2000 (0.00%) with |alpha| &gt; 30.0\n  held-out Riesz  : -66.7209\n\n\n\n\n\ngreedy &lt;- RieszBooster$new(\n  estimand = ATE(),\n  n_estimators = 300L,\n  learning_rate = 0.3,\n  max_depth = 8L,\n  reg_lambda = 0.0\n)\ngreedy$fit(df)\ncat(greedy$diagnose(df)$summary)\n\nRiesz representer diagnostics (n=2000):\n  RMS magnitude   : 2.3614\n  mean            : -0.2094\n  min / max       : -13.6254 / 17.4702\n  |alpha| quantiles:\n     0.50: 1.1424\n     0.90: 2.6994\n     0.99: 9.7480\n     1.00: 17.4702\n  extreme rows    : 0/2000 (0.00%) with |alpha| &gt; 30.0\n  held-out Riesz  : -62.8998",
+    "crumbs": [
+      "Diagnostics and tuning"
+    ]
+  },
+  {
+    "objectID": "diagnostics-and-tuning.html#reading-the-report",
+    "href": "diagnostics-and-tuning.html#reading-the-report",
+    "title": "Diagnostics and tuning",
+    "section": "Reading the report",
+    "text": "Reading the report\nThe summary has three parts.\nMagnitude block. RMS, mean, min/max, and |alpha| quantiles. The 99th percentile and the max are the load-bearing numbers. Healthy fits typically have max \\(\\le\\) a few times the 99th percentile. Max far above the 99th percentile is the signature of a single-point extrapolation outlier — one leaf in the boosted forest is far from any training data and the linear extrapolation has run away.\nExtreme rows. Rows where \\(|\\hat\\alpha|\\) exceeds extreme_threshold (default 30). The downstream IF estimator’s variance is dominated by the largest few weights, so even 1% of rows over the threshold is enough to inflate confidence intervals.\nWarnings block. Two automatic checks fire when .diagnose() thinks something is wrong:\n\n“X% of rows have \\(|\\hat\\alpha| &gt;\\) threshold — possible near-positivity violation.” Either the data has genuine near-positivity (in which case truncate extreme_threshold lower and report the loss-of-overlap honestly) or the booster is over-fitting (tune as below).\n“max \\(|\\hat\\alpha|\\) is &gt;10× the 99th percentile — likely a single extrapolation outlier.” The booster found a leaf with no nearby training data and extrapolated. Tighten trees, increase reg_lambda, or stop earlier.",
+    "crumbs": [
+      "Diagnostics and tuning"
+    ]
+  },
+  {
+    "objectID": "diagnostics-and-tuning.html#a-tuned-fit",
+    "href": "diagnostics-and-tuning.html#a-tuned-fit",
+    "title": "Diagnostics and tuning",
+    "section": "A tuned fit",
+    "text": "A tuned fit\nSame data, sane hyperparameters, with early stopping on a held-out split.\n\nPythonR\n\n\n\ntuned = RieszBooster(\n    estimand=ATE(),\n    n_estimators=2000,\n    learning_rate=0.05,\n    max_depth=3,\n    reg_lambda=1.0,\n    early_stopping_rounds=20,\n    validation_fraction=0.2,\n).fit(df)\n\nprint(f\"stopped at iter {tuned.best_iteration_}, \"\n      f\"best held-out Riesz loss = {tuned.best_score_:.4f}\")\n\nstopped at iter 1999, best held-out Riesz loss = -31.0978\n\nprint()\nprint(tuned.diagnose(df).summary())\n\nRiesz representer diagnostics (n=2000):\n  RMS magnitude   : 3.2958\n  mean            : 0.0136\n  min / max       : -43.5758 / 30.7376\n  |alpha| quantiles:\n     0.50: 1.1028\n     0.90: 2.9091\n     0.99: 14.2924\n     1.00: 43.5758\n  extreme rows    : 2/2000 (0.10%) with |alpha| &gt; 30.0\n  held-out Riesz  : -28.1668\n\n\n\n\n\ntuned &lt;- RieszBooster$new(\n  estimand = ATE(),\n  n_estimators = 2000L,\n  learning_rate = 0.05,\n  max_depth = 3L,\n  reg_lambda = 1.0,\n  early_stopping_rounds = 20L,\n  validation_fraction = 0.2\n)\ntuned$fit(df)\ncat(sprintf(\"stopped at iter %d, best held-out Riesz loss = %.4f\\n\\n\",\n            reticulate::py_to_r(tuned$py$best_iteration_),\n            reticulate::py_to_r(tuned$py$best_score_)))\n\nstopped at iter 1999, best held-out Riesz loss = -29.3481\n\ncat(tuned$diagnose(df)$summary)\n\nRiesz representer diagnostics (n=2000):\n  RMS magnitude   : 3.1136\n  mean            : -0.0701\n  min / max       : -15.5357 / 43.7492\n  |alpha| quantiles:\n     0.50: 1.1113\n     0.90: 3.2547\n     0.99: 10.1967\n     1.00: 43.7492\n  extreme rows    : 3/2000 (0.15%) with |alpha| &gt; 30.0\n  held-out Riesz  : -30.6263\n\n\n\n\n\nThe greedy fit’s max \\(|\\hat\\alpha|\\) shrinks by an order of magnitude, the extreme-row count drops, and the warnings clear (or at least become honest signals about the data rather than the fit).",
+    "crumbs": [
+      "Diagnostics and tuning"
+    ]
+  },
+  {
+    "objectID": "diagnostics-and-tuning.html#tuning-recipe",
+    "href": "diagnostics-and-tuning.html#tuning-recipe",
+    "title": "Diagnostics and tuning",
+    "section": "Tuning recipe",
+    "text": "Tuning recipe\n\n\n\n\n\n\n\n\n\nKnob\nDefault\nWhen to change\nWhy\n\n\n\n\nmax_depth\n4\nDrop to 2–3 if you see extrapolation outliers\nShallow trees can’t carve out a high-magnitude leaf for a single point.\n\n\nlearning_rate\n0.05\nDrop to 0.02 for harder problems\nSmaller updates mean each tree contributes less; the ensemble has more trees to recover. Pair with higher n_estimators.\n\n\nn_estimators + early_stopping_rounds\n200, None\nAlways: set n_estimators generously (1000-2000), early_stopping_rounds=20\nThe validation split picks the right size for you. The default of 200 is for unit tests, not real fits.\n\n\nvalidation_fraction\n0.0\n0.2 whenever you set early_stopping_rounds\nInternal split for early stopping. (Or pass eval_set= explicitly.)\n\n\nreg_lambda\n1.0\nBump to 5–10 for low-overlap data\nxgboost L2 on leaf weights — directly damps the magnitude of any single leaf.\n\n\nsubsample\n1.0\nTry 0.5–0.8 with very large \\(n\\)\nStochastic boosting; sometimes helps, often doesn’t matter for tabular Riesz problems.\n\n\n\nFor the backend itself, the most consequential knobs are exposed on XGBoostBackend:\n\n\n\n\n\n\n\n\nKnob (on XGBoostBackend(...))\nDefault\nWhen to change\n\n\n\n\ngradient_only\nFalse\nTrue to match Lee-Schuler Algorithm 2 / Friedman 2001 exactly. Empirically worse than the default at matched hyperparameters; reach for it only when reproducing the reference paper.\n\n\nhessian_floor\n2.0\nAlmost never. Floors the per-row Hessian on counterfactual rows so leaf-weight Newton steps stay stable. The default matches the natural Hessian of original-data rows; lower it only with reason.\n\n\n\nSee backends and losses for the full backend story.",
+    "crumbs": [
+      "Diagnostics and tuning"
+    ]
+  },
+  {
+    "objectID": "diagnostics-and-tuning.html#a-note-on-what-.diagnose-is-not",
+    "href": "diagnostics-and-tuning.html#a-note-on-what-.diagnose-is-not",
+    "title": "Diagnostics and tuning",
+    "section": "A note on what .diagnose() is not",
+    "text": "A note on what .diagnose() is not\nIt does not estimate the closed-form \\(\\alpha_0\\) to compare against — there isn’t one in general. It does not decide whether your sample size is enough. It is a sanity check on the fitted object and a smoke alarm for two specific failure modes (positivity, outlier extrapolation). For the actual quality of the fit, the held-out Riesz loss (best_score_) is the number to track during tuning, and the downstream estimator’s bootstrap CI is the number to report.",
+    "crumbs": [
+      "Diagnostics and tuning"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "rieszboost",
+    "section": "",
+    "text": "rieszboost directly estimates the Riesz representer α₀ of a linear functional θ(P) = E[m(Z, g₀)] — the building block of one-step / TMLE / DML estimators in semiparametric inference — without ever deriving or inverting a propensity-style ratio.\nIt implements Lee & Schuler, RieszBoost (arXiv:2501.04871) with an sklearn-style API in Python and an R6 mirror in R. The R and Python interfaces produce bitwise-identical predictions; this guide presents every code example in both languages — pick whichever tab you prefer with the toggle on each page, and your choice persists site-wide.",
+    "crumbs": [
+      "rieszboost"
+    ]
+  },
+  {
+    "objectID": "index.html#how-to-read-this-site",
+    "href": "index.html#how-to-read-this-site",
+    "title": "rieszboost",
+    "section": "How to read this site",
+    "text": "How to read this site\nIf you want to install the package and fit something in 30 lines, the README is the fastest path. This guide is the deeper reference:\n\nWhy and what — what’s a Riesz representer, why estimate it directly.\nInstall — Python install, optional R wrapper, dependencies.\nQuickstart — end-to-end ATE in one page, executable, in both languages.\nBuilt-in and custom estimands — ATE, ATT, TSM, AdditiveShift, LocalShift, StochasticIntervention; how to write your own m(z, alpha).\nscikit-learn integration — cross_val_predict, GridSearchCV, Pipeline, clone. (RieszBooster is a BaseEstimator.)\nDiagnostics and tuning — what .diagnose() tells you and how to tune in response.\nBackends and losses — swap to SklearnBackend for non-tree base learners; swap to KLLoss for density-ratio targets.\nR interface — reticulate setup, parity guarantee, what’s currently Python-only.\nDeveloping rieszboost — repo layout, tests, how to contribute.\nReferences — papers cited throughout.\n\n\n\n\n\n\n\nTipCode execution\n\n\n\nEvery code block in this guide ran when the site was built. The numbers and figures you see came from the version of rieszboost that produced this page — there are no stale snippets.",
+    "crumbs": [
+      "rieszboost"
+    ]
+  },
+  {
+    "objectID": "intro.html",
+    "href": "intro.html",
+    "title": "What’s a Riesz representer, and why boost it?",
+    "section": "",
+    "text": "In semiparametric inference, you often want to estimate a functional of an unknown nuisance — something like\n\\[\n\\theta(P) \\;=\\; \\mathbb{E}\\!\\left[m(Z, g_0)\\right]\n\\]\nwhere \\(g_0(z) = \\mathbb{E}[Y \\mid Z = z]\\) is an outcome regression and \\(m(z, g)\\) is a linear functional of \\(g\\). Concrete examples:\n\n\n\n\n\n\n\nTarget\n\\(m(z, g)\\)\n\n\n\n\nAverage treatment effect\n\\(g(1, x) - g(0, x)\\)\n\n\nTreatment-specific mean at \\(a^\\star\\)\n\\(g(a^\\star, x)\\)\n\n\nAdditive shift effect \\(a \\mapsto a + \\delta\\)\n\\(g(a + \\delta, x) - g(a, x)\\)\n\n\nStochastic intervention \\(a \\sim h(\\cdot \\mid x)\\)\n\\(\\int g(a', x)\\,h(a' \\mid x)\\,da'\\)\n\n\n\nA naive plug-in estimator \\(\\hat\\theta = n^{-1} \\sum_i m(Z_i, \\hat g)\\) is biased because \\(\\hat g\\) is itself estimated. Modern semiparametric estimators (one-step, TMLE, DML) correct for that bias by adding a term involving the Riesz representer \\(\\alpha_0\\) of \\(m\\):\n\\[\n\\hat\\theta_{\\text{corrected}} \\;=\\; n^{-1} \\sum_i \\Big[\\,m(Z_i, \\hat g) + \\alpha_0(Z_i)\\,\\big(Y_i - \\hat g(Z_i)\\big)\\,\\Big].\n\\]",
+    "crumbs": [
+      "What's a Riesz representer, and why boost it?"
+    ]
+  },
+  {
+    "objectID": "intro.html#the-setup",
+    "href": "intro.html#the-setup",
+    "title": "What’s a Riesz representer, and why boost it?",
+    "section": "",
+    "text": "In semiparametric inference, you often want to estimate a functional of an unknown nuisance — something like\n\\[\n\\theta(P) \\;=\\; \\mathbb{E}\\!\\left[m(Z, g_0)\\right]\n\\]\nwhere \\(g_0(z) = \\mathbb{E}[Y \\mid Z = z]\\) is an outcome regression and \\(m(z, g)\\) is a linear functional of \\(g\\). Concrete examples:\n\n\n\n\n\n\n\nTarget\n\\(m(z, g)\\)\n\n\n\n\nAverage treatment effect\n\\(g(1, x) - g(0, x)\\)\n\n\nTreatment-specific mean at \\(a^\\star\\)\n\\(g(a^\\star, x)\\)\n\n\nAdditive shift effect \\(a \\mapsto a + \\delta\\)\n\\(g(a + \\delta, x) - g(a, x)\\)\n\n\nStochastic intervention \\(a \\sim h(\\cdot \\mid x)\\)\n\\(\\int g(a', x)\\,h(a' \\mid x)\\,da'\\)\n\n\n\nA naive plug-in estimator \\(\\hat\\theta = n^{-1} \\sum_i m(Z_i, \\hat g)\\) is biased because \\(\\hat g\\) is itself estimated. Modern semiparametric estimators (one-step, TMLE, DML) correct for that bias by adding a term involving the Riesz representer \\(\\alpha_0\\) of \\(m\\):\n\\[\n\\hat\\theta_{\\text{corrected}} \\;=\\; n^{-1} \\sum_i \\Big[\\,m(Z_i, \\hat g) + \\alpha_0(Z_i)\\,\\big(Y_i - \\hat g(Z_i)\\big)\\,\\Big].\n\\]",
+    "crumbs": [
+      "What's a Riesz representer, and why boost it?"
+    ]
+  },
+  {
+    "objectID": "intro.html#what-is-alpha_0",
+    "href": "intro.html#what-is-alpha_0",
+    "title": "What’s a Riesz representer, and why boost it?",
+    "section": "What is \\(\\alpha_0\\)?",
+    "text": "What is \\(\\alpha_0\\)?\nThe Riesz representation theorem says: because \\(m(z, \\cdot)\\) is linear in its second argument and bounded, there exists a function \\(\\alpha_0(z)\\) such that\n\\[\n\\mathbb{E}[m(Z, g)] \\;=\\; \\mathbb{E}\\!\\left[\\alpha_0(Z) \\cdot g(Z)\\right]\n\\quad \\text{for all } g.\n\\]\nFor ATE this is the inverse-propensity weight \\(\\alpha_0(a, x) = a/\\pi(x) - (1-a)/(1-\\pi(x))\\). For TSM it’s the density ratio \\(\\mathbb{1}\\{a = a^\\star\\}/\\pi(a^\\star \\mid x)\\). In general \\(\\alpha_0\\) has a closed form involving the generalized propensity score — and that closed form is exactly what we want to avoid computing.",
+    "crumbs": [
+      "What's a Riesz representer, and why boost it?"
+    ]
+  },
+  {
+    "objectID": "intro.html#why-not-just-estimate-the-propensity",
+    "href": "intro.html#why-not-just-estimate-the-propensity",
+    "title": "What’s a Riesz representer, and why boost it?",
+    "section": "Why not just estimate the propensity?",
+    "text": "Why not just estimate the propensity?\nFor ATE: estimate \\(\\hat\\pi(x)\\), plug in, get \\(\\hat\\alpha(a, x) = a/\\hat\\pi(x) - (1-a)/(1-\\hat\\pi(x))\\). Done.\nThis works fine when \\(\\hat\\pi\\) is well-behaved. It breaks when:\n\nPositivity is borderline. If \\(\\hat\\pi(x)\\) approaches 0 or 1 anywhere in the data, \\(\\hat\\alpha\\) explodes. Truncation patches the symptom but introduces its own bias and is hard to defend.\nThe estimand is non-standard. For continuous shifts, stochastic interventions, longitudinal LMTPs, the closed-form \\(\\alpha_0\\) involves derivatives of the conditional density of \\(A\\) given \\(X\\) — quantities that are themselves harder to estimate than \\(\\alpha_0\\) itself. By the time you’ve written down the estimator, you’ve solved a harder problem than you needed to.\nMisspecification compounds. Plug-in bias in \\(\\hat\\pi\\) propagates nonlinearly through the ratio \\(1/\\hat\\pi\\).",
+    "crumbs": [
+      "What's a Riesz representer, and why boost it?"
+    ]
+  },
+  {
+    "objectID": "intro.html#riesz-regression-estimate-alpha_0-directly",
+    "href": "intro.html#riesz-regression-estimate-alpha_0-directly",
+    "title": "What’s a Riesz representer, and why boost it?",
+    "section": "Riesz regression: estimate \\(\\alpha_0\\) directly",
+    "text": "Riesz regression: estimate \\(\\alpha_0\\) directly\nChernozhukov et al. (2021) observed that \\(\\alpha_0\\) is the unique minimizer of the Riesz loss\n\\[\nL(\\alpha) \\;=\\; \\mathbb{E}\\!\\left[\\alpha(Z)^2 - 2\\,m(Z, \\alpha)\\right]\n\\]\nover all square-integrable \\(\\alpha\\). (You can verify: the Gateaux derivative at \\(\\alpha_0\\) vanishes by the Riesz identity.) So estimating \\(\\alpha_0\\) becomes a regression problem with a custom loss — no propensity, no density derivative, no truncation.\nThe minimizer is well-defined whether or not the closed-form \\(\\alpha_0\\) has nice tails. When \\(\\pi(x)\\) is small at some \\(x\\), the Riesz loss penalizes large \\(\\alpha\\) values quadratically; the resulting \\(\\hat\\alpha\\) is shrunk toward zero in low-overlap regions, which is exactly what you want for downstream variance control.",
+    "crumbs": [
+      "What's a Riesz representer, and why boost it?"
+    ]
+  },
+  {
+    "objectID": "intro.html#why-boost-it",
+    "href": "intro.html#why-boost-it",
+    "title": "What’s a Riesz representer, and why boost it?",
+    "section": "Why boost it?",
+    "text": "Why boost it?\nThe Riesz loss is a regression loss like any other. Lee & Schuler (2025) show that gradient boosting is a particularly good fit:\n\nTabular-friendly. Boosting is the workhorse for tabular semiparametric problems; same hyperparameters that work for outcome models tend to transfer.\nDirect gradient/Hessian access. For finite-point \\(m\\) (any \\(m\\) that’s a finite linear combination of point evaluations of \\(\\alpha\\) — which covers ATE, ATT, TSM, AdditiveShift, and Monte-Carlo’d stochastic interventions), the per-row gradient and Hessian have simple closed forms. xgboost’s custom objective consumes them directly with no surrogate.\nBuilt-in regularization knobs. max_depth, learning_rate, early_stopping_rounds, reg_lambda all do exactly what they do for ordinary regression — and the tuning page walks through how to set them with \\(\\hat\\alpha\\)-specific diagnostics in mind.",
+    "crumbs": [
+      "What's a Riesz representer, and why boost it?"
+    ]
+  },
+  {
+    "objectID": "intro.html#what-rieszboost-gives-you",
+    "href": "intro.html#what-rieszboost-gives-you",
+    "title": "What’s a Riesz representer, and why boost it?",
+    "section": "What rieszboost gives you",
+    "text": "What rieszboost gives you\nA scikit-learn-style estimator that:\n\nBoosts \\(\\hat\\alpha\\) for any of the built-in estimands (ATE, ATT, TSM, AdditiveShift, LocalShift, StochasticIntervention) — or your own — without you ever writing down the closed-form Riesz representer.\nComposes with cross_val_predict, GridSearchCV, Pipeline so cross-fitting and tuning are off-the-shelf.\nSurfaces near-positivity and outlier-extrapolation warnings via .diagnose(X) so you can catch failure modes before they bias downstream estimators.\nHas a parallel R6 wrapper in R so the same code runs in either language.\n\nNext: install and the 30-line quickstart.",
+    "crumbs": [
+      "What's a Riesz representer, and why boost it?"
+    ]
+  },
+  {
+    "objectID": "r-interface.html",
+    "href": "r-interface.html",
+    "title": "R interface",
+    "section": "",
+    "text": "The R wrapper is an R6 mirror of the Python RieszBooster. R-side and Python-side predictions are bitwise-identical on the same data because the R wrapper delegates every numerical step to Python via reticulate — the R object holds a reference to the underlying Python RieszBooster instance and forwards method calls.\nThis page is a focused R reference. The R API is covered throughout the rest of the guide via the bilingual tabsets — install in install.qmd, the standard fit pattern in quickstart.qmd, the full estimand inventory in estimands.qmd, and so on.",
+    "crumbs": [
+      "R interface"
+    ]
+  },
+  {
+    "objectID": "r-interface.html#one-time-setup",
+    "href": "r-interface.html#one-time-setup",
+    "title": "R interface",
+    "section": "One-time setup",
+    "text": "One-time setup\nAfter installing rieszboost into a Python venv (see install.qmd):\n# Option A: env var, set before R starts\nSys.setenv(RETICULATE_PYTHON = \"/path/to/rieszboost/.venv/bin/python\")\n\n# Option B: explicit, after R has started\nuse_python_rieszboost(\"/path/to/rieszboost/.venv/bin/python\")\nuse_python_rieszboost() accepts either a path to a Python interpreter or a path to a virtualenv directory; it forwards to the appropriate reticulate function. It also imports the Python rieszboost module up front so any subsequent ATE(), RieszBooster$new(...), etc. work without per-call import overhead.",
+    "crumbs": [
+      "R interface"
+    ]
+  },
+  {
+    "objectID": "r-interface.html#api-surface-r-side",
+    "href": "r-interface.html#api-surface-r-side",
+    "title": "R interface",
+    "section": "API surface (R-side)",
+    "text": "API surface (R-side)\nEvery public Python class and function except the symbolic tracer is exposed in R:\n\n\n\n\n\n\n\nR\nPython equivalent\n\n\n\n\nATE(treatment, covariates)\nrieszboost.ATE(treatment, covariates)\n\n\nATT(treatment, covariates)\nrieszboost.ATT(treatment, covariates)\n\n\nTSM(level, treatment, covariates)\nrieszboost.TSM(level, treatment, covariates)\n\n\nAdditiveShift(delta, treatment, covariates)\nrieszboost.AdditiveShift(delta, treatment, covariates)\n\n\nLocalShift(delta, threshold, treatment, covariates)\nrieszboost.LocalShift(delta, threshold, ...)\n\n\nStochasticIntervention(samples_key, treatment, covariates)\nrieszboost.StochasticIntervention(...)\n\n\nSquaredLoss()\nrieszboost.SquaredLoss()\n\n\nKLLoss(max_eta)\nrieszboost.KLLoss(max_eta)\n\n\nXGBoostBackend(hessian_floor, gradient_only)\nrieszboost.XGBoostBackend(...)\n\n\nSklearnBackend(base_learner_factory)\nrieszboost.SklearnBackend(...)\n\n\nRieszBooster$new(estimand, ...)\nrieszboost.RieszBooster(estimand, ...)\n\n\n  $fit(df, eval_set=)\n.fit(X, eval_set=)\n\n\n  $predict(df)\n.predict(X)\n\n\n  $score(df)\n.score(X)\n\n\n  $riesz_loss(df)\n.riesz_loss(X)\n\n\n  $diagnose(df)\n.diagnose(X) (returns a list, with $summary as a string)\n\n\n  $py\nthe underlying Python object (escape hatch)\n\n\n\nR6’s $method() syntax invariably maps to Python’s .method(). Integer-typed kwargs (n_estimators, max_depth, random_state, early_stopping_rounds) need an L suffix in R, e.g. n_estimators = 200L. Other kwargs are auto-converted by reticulate.",
+    "crumbs": [
+      "R interface"
+    ]
+  },
+  {
+    "objectID": "r-interface.html#verifying-parity",
+    "href": "r-interface.html#verifying-parity",
+    "title": "R interface",
+    "section": "Verifying parity",
+    "text": "Verifying parity\nThe parity claim is not aspirational — it’s tested in CI. Here’s the same fit run from both languages, comparing predictions row-by-row.\n\nPythonR\n\n\n\nimport numpy as np, pandas as pd\nfrom rieszboost import RieszBooster, ATE\n\nrng = np.random.default_rng(0)\nn = 500\nx = rng.uniform(0, 1, n)\na = rng.binomial(1, 1 / (1 + np.exp(-(2 * x - 1))))\ndf_py = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\n\nbooster_py = RieszBooster(estimand=ATE(), n_estimators=50, learning_rate=0.05,\n                          max_depth=3, random_state=42).fit(df_py)\nalpha_py = booster_py.predict(df_py)\nalpha_py[:5]\n\narray([ 1.4076698,  1.4764098,  1.6470399, -1.1931754,  1.1374395],\n      dtype=float32)\n\n\n\n\n\nset.seed(0)\nn  &lt;- 500\nx  &lt;- runif(n)\na  &lt;- rbinom(n, 1, 1 / (1 + exp(-(2 * x - 1))))\ndf_r &lt;- data.frame(a = as.numeric(a), x = x)\n\nbooster_r &lt;- RieszBooster$new(\n  estimand = ATE(), n_estimators = 50L, learning_rate = 0.05,\n  max_depth = 3L, random_state = 42L\n)\nbooster_r$fit(df_r)\nalpha_r &lt;- booster_r$predict(df_r)\nhead(alpha_r, 5)\n\n[1]  1.212691 -1.263393  1.486148 -1.365574  1.212691\n\n\n\n\n\n(The two RNGs are different — Python’s default_rng(0) and R’s set.seed(0) give different x and a columns, so alpha_py and alpha_r are not directly comparable here. To verify parity end-to-end, generate the data in one language, pass it to the other via reticulate, and compare predictions on the same df. The R package’s test suite includes exactly that test.)",
+    "crumbs": [
+      "R interface"
+    ]
+  },
+  {
+    "objectID": "r-interface.html#calling-python-only-features-from-r",
+    "href": "r-interface.html#calling-python-only-features-from-r",
+    "title": "R interface",
+    "section": "Calling Python-only features from R",
+    "text": "Calling Python-only features from R\nThe LinearForm tracer is Python-only — for now, custom estimands (those needing the tracer) require defining m() in Python. From R you can still drive a custom Python m() end-to-end via reticulate:\n# Define a custom m in Python (e.g. in a script you `source` from R)\nreticulate::py_run_string(\"\ndef m_my_thing(z, alpha):\n    return 2.0 * (alpha(a=2, x=z['x']) - alpha(a=0, x=z['x']))\n\nfrom rieszboost import Estimand\nmy_estimand = Estimand(feature_keys=('a', 'x'), m=m_my_thing, name='MyThing')\n\")\n\nest &lt;- reticulate::py$my_estimand\nbooster &lt;- RieszBooster$new(estimand = est, n_estimators = 100L, max_depth = 3L)\nbooster$fit(df_r)\nbooster$predict(df_r)[1:5]\nThe same pattern works for custom LossSpec subclasses: define the class in Python, grab the instance via reticulate::py$..., pass to RieszBooster$new(loss = ...).",
+    "crumbs": [
+      "R interface"
+    ]
+  },
+  {
+    "objectID": "r-interface.html#escape-hatch",
+    "href": "r-interface.html#escape-hatch",
+    "title": "R interface",
+    "section": "Escape hatch",
+    "text": "Escape hatch\nEvery R6 method ultimately calls into the underlying Python object. If something isn’t yet wrapped, you can always reach through:\nbooster &lt;- RieszBooster$new(estimand = ATE(), n_estimators = 50L)\nbooster$fit(df_r)\n\n# These exist on the Python side:\nreticulate::py_to_r(booster$py$best_iteration_)\nreticulate::py_to_r(booster$py$best_score_)\nreticulate::py_to_r(booster$py$base_score_)\nThe $py field is the underlying Python object; reticulate handles the conversion both ways. Use this for occasional access to attributes the R6 wrapper doesn’t expose; if you find yourself using it constantly, file an issue and we’ll add an R-side accessor.",
+    "crumbs": [
+      "R interface"
+    ]
+  },
+  {
+    "objectID": "r-interface.html#whats-not-in-r-yet",
+    "href": "r-interface.html#whats-not-in-r-yet",
+    "title": "R interface",
+    "section": "What’s not in R yet",
+    "text": "What’s not in R yet\n\n\n\n\n\n\n\nFeature\nWorkaround\n\n\n\n\nCustom m() for new estimands (the symbolic tracer is Python-only)\nDefine m() in Python via reticulate::py_run_string, then pass the resulting Estimand to RieszBooster$new(estimand=...). See above.\n\n\nCustom LossSpec subclasses\nSame pattern: subclass in Python via reticulate::py_run_string, pass via loss=.\n\n\n\nEverything else — every built-in estimand, both backends, both losses, the full RieszBooster API including cross_val_predict via reticulate (see sklearn-integration.qmd) — is first-class in R.",
+    "crumbs": [
+      "R interface"
+    ]
+  },
+  {
+    "objectID": "save-and-load.html",
+    "href": "save-and-load.html",
+    "title": "Save and load",
+    "section": "",
+    "text": "A fitted RieszBooster serializes to a directory containing the model binary plus a JSON metadata sidecar (loss spec, estimand identity, feature schema, base score, best iteration). Built-in estimands are reconstructed automatically on load; custom estimands have to be re-passed.",
+    "crumbs": [
+      "Save and load"
+    ]
+  },
+  {
+    "objectID": "save-and-load.html#round-trip",
+    "href": "save-and-load.html#round-trip",
+    "title": "Save and load",
+    "section": "Round-trip",
+    "text": "Round-trip\n\nPythonR\n\n\n\nimport numpy as np\nimport pandas as pd\nimport tempfile, pathlib\nfrom rieszboost import RieszBooster, ATE\n\nrng = np.random.default_rng(0)\nn = 800\nx = rng.uniform(0, 1, n)\npi = 1 / (1 + np.exp(-(-0.02*x - x**2 + 4*np.log(x + 0.3) + 1.5)))\na = rng.binomial(1, pi)\ndf = pd.DataFrame({\"a\": a.astype(float), \"x\": x})\n\nbooster = RieszBooster(\n    estimand=ATE(),\n    n_estimators=200, learning_rate=0.05, max_depth=4,\n    early_stopping_rounds=20, validation_fraction=0.2,\n).fit(df)\npreds_before = booster.predict(df)\n\nwith tempfile.TemporaryDirectory() as td:\n    save_path = pathlib.Path(td) / \"my_alpha\"\n    booster.save(save_path)\n    print(\"Saved files:\", sorted(p.name for p in save_path.iterdir()))\n\n    loaded = RieszBooster.load(save_path)\n    preds_after = loaded.predict(df)\n    print(f\"predictions match exactly: {np.array_equal(preds_before, preds_after)}\")\n    print(f\"best_iteration preserved : {loaded.best_iteration_}\")\n\nSaved files: ['booster.ubj', 'metadata.json']\npredictions match exactly: True\nbest_iteration preserved : 199\n\n\n\n\n\nset.seed(0)\nn  &lt;- 800\nx  &lt;- runif(n)\npi &lt;- 1 / (1 + exp(-(-0.02 * x - x^2 + 4 * log(x + 0.3) + 1.5)))\na  &lt;- rbinom(n, 1, pi)\ndf &lt;- data.frame(a = as.numeric(a), x = x)\n\nbooster &lt;- RieszBooster$new(\n  estimand = ATE(\"a\", \"x\"),\n  n_estimators = 200L, learning_rate = 0.05, max_depth = 4L,\n  early_stopping_rounds = 20L, validation_fraction = 0.2\n)\nbooster$fit(df)\npreds_before &lt;- booster$predict(df)\n\ntd &lt;- tempfile()\nbooster$save(td)\ncat(\"Saved files:\", paste(list.files(td), collapse = \", \"), \"\\n\")\n\nSaved files: booster.ubj, metadata.json \n\nloaded &lt;- load_riesz_booster(td)\npreds_after &lt;- loaded$predict(df)\ncat(sprintf(\"predictions match exactly: %s\\n\",\n            isTRUE(all.equal(preds_before, preds_after))))\n\npredictions match exactly: TRUE\n\nunlink(td, recursive = TRUE)",
+    "crumbs": [
+      "Save and load"
+    ]
+  },
+  {
+    "objectID": "save-and-load.html#cross-language",
+    "href": "save-and-load.html#cross-language",
+    "title": "Save and load",
+    "section": "Cross-language",
+    "text": "Cross-language\nSave in one language, load in the other. The on-disk format is the same — the xgboost model is xgboost’s native UBJSON, and the metadata sidecar is plain JSON.\n# In R: save the booster\nbooster$save(\"alpha_ate\")\n# In Python: load the same directory and continue working\nloaded = RieszBooster.load(\"alpha_ate\")\nloaded.predict(new_df)\nThe R parity test exercises both directions with tolerance = 1e-12, and our test suite asserts that predictions are bitwise-identical pre- and post-save.",
+    "crumbs": [
+      "Save and load"
+    ]
+  },
+  {
+    "objectID": "save-and-load.html#custom-estimands",
+    "href": "save-and-load.html#custom-estimands",
+    "title": "Save and load",
+    "section": "Custom estimands",
+    "text": "Custom estimands\nCustom (non-built-in) Estimands can’t be reconstructed from JSON — the user’s m() callable doesn’t survive a save/load cycle. The booster file itself is fine; you just have to re-pass the estimand on load:\n\nimport numpy as np\nimport pandas as pd\nimport tempfile, pathlib\nfrom rieszboost import RieszBooster, Estimand\n\n# Set up data and a custom estimand (not a built-in)\nrng = np.random.default_rng(0)\nn = 200\ndf = pd.DataFrame({\"a\": rng.binomial(1, 0.5, n).astype(float),\n                   \"x\": rng.uniform(0, 1, n)})\n\ndef m_custom(z, alpha):\n    return alpha(a=1, x=z[\"x\"]) - alpha(a=0, x=z[\"x\"])\n\ncustom = Estimand(feature_keys=(\"a\", \"x\"), m=m_custom, name=\"my_custom\")\nbooster = RieszBooster(estimand=custom, n_estimators=20).fit(df)\n\nwith tempfile.TemporaryDirectory() as td:\n    p = pathlib.Path(td) / \"custom\"\n    booster.save(p)\n\n    # Loading without the original estimand raises:\n    try:\n        RieszBooster.load(p)\n    except ValueError as e:\n        print(\"expected error:\", str(e)[:80], \"...\")\n\n    # Pass the original estimand to reconstruct:\n    loaded = RieszBooster.load(p, estimand=custom)\n    print(\"loaded with custom estimand OK\")\n\nexpected error: Saved booster at /var/folders/07/xf4cwwjd7nggpmy8y006ww6w0000gq/T/tmp5c_p3xms/cu ...\nloaded with custom estimand OK",
+    "crumbs": [
+      "Save and load"
+    ]
+  },
+  {
+    "objectID": "save-and-load.html#whats-in-the-file",
+    "href": "save-and-load.html#whats-in-the-file",
+    "title": "Save and load",
+    "section": "What’s in the file",
+    "text": "What’s in the file\n\nbooster.ubj (XGBoost backend) or predictor.joblib (sklearn-compatible backend).\nmetadata.json containing:\n\npredictor_kind: \"xgboost\" or \"sklearn\".\nloss: {\"type\": \"SquaredLoss\" | \"KLLoss\", \"args\": {...}} — re-instantiated with loss_from_spec(...) on load.\nestimand_factory_spec: {\"factory\": \"ATE\" | ...} for built-ins, null for custom.\nfeature_keys / extra_keys, base_score, best_iteration, best_score.\nhyperparameters — informational; lets get_params(deep=False) on the loaded booster mirror what you fit with.\n\n\nThe JSON is plain text and diffable; if the file format ever changes, rieszboost_format_version lets us migrate.",
+    "crumbs": [
+      "Save and load"
+    ]
+  }
+]
