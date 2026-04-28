@@ -81,9 +81,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-21ff0d146334540f3fc50d0f21961610.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-589e085fe78506912fc92237552c30f7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -408,10 +408,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#repo-layout" id="toc-repo-layout" class="nav-link active" data-scroll-target="#repo-layout">Repo layout</a></li>
   <li><a href="#run-tests" id="toc-run-tests" class="nav-link" data-scroll-target="#run-tests">Run tests</a></li>
-  <li><a href="#tracer-briefly" id="toc-tracer-briefly" class="nav-link" data-scroll-target="#tracer-briefly">Tracer, briefly</a></li>
-  <li><a href="#adding-a-new-estimand-factory" id="toc-adding-a-new-estimand-factory" class="nav-link" data-scroll-target="#adding-a-new-estimand-factory">Adding a new estimand factory</a></li>
-  <li><a href="#adding-a-new-lossspec" id="toc-adding-a-new-lossspec" class="nav-link" data-scroll-target="#adding-a-new-lossspec">Adding a new <code>LossSpec</code></a></li>
-  <li><a href="#adding-a-new-backend" id="toc-adding-a-new-backend" class="nav-link" data-scroll-target="#adding-a-new-backend">Adding a new backend</a></li>
+  <li><a href="#tracer" id="toc-tracer" class="nav-link" data-scroll-target="#tracer">Tracer</a></li>
+  <li><a href="#adding-an-estimand-factory" id="toc-adding-an-estimand-factory" class="nav-link" data-scroll-target="#adding-an-estimand-factory">Adding an estimand factory</a></li>
+  <li><a href="#adding-a-lossspec" id="toc-adding-a-lossspec" class="nav-link" data-scroll-target="#adding-a-lossspec">Adding a <code>LossSpec</code></a></li>
+  <li><a href="#adding-a-backend" id="toc-adding-a-backend" class="nav-link" data-scroll-target="#adding-a-backend">Adding a backend</a></li>
   <li><a href="#living-doc-rule" id="toc-living-doc-rule" class="nav-link" data-scroll-target="#living-doc-rule">Living-doc rule</a></li>
   <li><a href="#local-docs-render" id="toc-local-docs-render" class="nav-link" data-scroll-target="#local-docs-render">Local docs render</a></li>
   <li><a href="#ci" id="toc-ci" class="nav-link" data-scroll-target="#ci">CI</a></li>
@@ -447,89 +447,83 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 ├── python/
 │   ├── rieszboost/              # the library
 │   │   ├── __init__.py            # public API surface, lazy imports
-│   │   ├── estimator.py           # RieszBooster class (sklearn BaseEstimator)
+│   │   ├── estimator.py           # RieszBooster (sklearn BaseEstimator)
 │   │   ├── estimand.py            # ATE, ATT, TSM, AdditiveShift,
 │   │   │                          # LocalShift, StochasticIntervention, Estimand
 │   │   ├── augmentation.py        # build_augmented + AugmentedDataset
-│   │   ├── losses.py              # LossSpec protocol, SquaredLoss, KLLoss
+│   │   ├── losses.py              # LossSpec protocol + four losses
 │   │   ├── diagnostics.py         # diagnose() + Diagnostics dataclass
 │   │   ├── tracer.py              # LinearForm, Tracer, trace
-│   │   └── backends/              # swappable plugin architecture
+│   │   └── backends/
 │   │       ├── base.py              # Backend, Predictor, FitResult protocols
 │   │       ├── xgboost.py           # XGBoostBackend (default)
 │   │       └── sklearn.py           # SklearnBackend (any sklearn regressor)
 │   ├── tests/                   # pytest suite
 │   └── pyproject.toml
 ├── r/rieszboost/               # R6 wrapper via reticulate
-├── examples/                   # Lee-Schuler reproductions
+├── examples/                   # worked examples per estimand
 ├── docs/                       # this user guide (Quarto website)
-├── .github/workflows/docs.yml  # CI: render + deploy on push to main
-├── .githooks/pre-commit        # enforces docs-stay-in-sync rule
+├── .github/workflows/docs.yml  # render + deploy on push to main
+├── .githooks/pre-commit        # docs-stay-in-sync rule
 ├── README.md
 └── CLAUDE.md                   # implementation-side notes</code></pre>
 </section>
 <section id="run-tests" class="level2">
 <h2 class="anchored" data-anchor-id="run-tests">Run tests</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Python (51 tests at the time of writing)</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest python/tests <span class="at">-v</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># R (parity test included)</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="st">  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="st">  pkgload::load_all("r/rieszboost")</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="st">  testthat::test_dir("r/rieszboost/tests/testthat")</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="st">'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>xgboost</code> requires <code>libomp</code> on macOS — <code>brew install libomp</code> once.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/python</span> <span class="at">-m</span> pytest python/tests <span class="at">-v</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="st">  Sys.setenv(RETICULATE_PYTHON = file.path(getwd(), ".venv/bin/python"))</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="st">  pkgload::load_all("r/rieszboost")</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="st">  testthat::test_dir("r/rieszboost/tests/testthat")</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="st">'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>xgboost</code> requires <code>libomp</code> on macOS: <code>brew install libomp</code> once.</p>
 </section>
-<section id="tracer-briefly" class="level2">
-<h2 class="anchored" data-anchor-id="tracer-briefly">Tracer, briefly</h2>
-<p>The user writes <code>m(z, alpha)</code> opaquely with <code>+</code>, <code>-</code>, scalar <code>*</code>, and calls to <code>alpha(...)</code>. The library passes a <code>Tracer</code> in as <code>alpha</code>; each call returns a single-term <code>LinearForm</code>; the user’s <code>m</code> composes these via Python operator overloading. The result is a <code>LinearForm</code> whose <code>.as_pairs()</code> returns <code>[(coef, point), ...]</code> — exactly what <code>build_augmented</code> needs to construct the augmented dataset. Anything outside the linear-form algebra (squaring, integrals, constants) raises immediately at trace time, which keeps users on the rails of the fast path. See <a href="https://github.com/alejandroschuler/rieszboost/blob/main/python/rieszboost/tracer.py"><code>python/rieszboost/tracer.py</code></a> for the full implementation (~130 lines, no external deps).</p>
+<section id="tracer" class="level2">
+<h2 class="anchored" data-anchor-id="tracer">Tracer</h2>
+<p>The user writes <code>m(z, alpha)</code> with <code>+</code>, <code>-</code>, scalar <code>*</code>, and calls to <code>alpha(...)</code>. The library passes a <code>Tracer</code> in as <code>alpha</code>; each call returns a single-term <code>LinearForm</code>, and Python’s operator overloading composes them. The result has <code>.as_pairs()</code> returning <code>[(coef, point), ...]</code>, which <code>build_augmented</code> consumes to construct the augmented dataset. Operations outside the linear-form algebra (squaring, integrals, constants) raise at trace time. See <a href="https://github.com/alejandroschuler/rieszboost/blob/main/python/rieszboost/tracer.py"><code>python/rieszboost/tracer.py</code></a>.</p>
 </section>
-<section id="adding-a-new-estimand-factory" class="level2">
-<h2 class="anchored" data-anchor-id="adding-a-new-estimand-factory">Adding a new estimand factory</h2>
-<p>A factory is a function that returns an <code>Estimand</code>. Pattern from <code>estimand.py</code>:</p>
+<section id="adding-an-estimand-factory" class="level2">
+<h2 class="anchored" data-anchor-id="adding-an-estimand-factory">Adding an estimand factory</h2>
+<p>A factory returns an <code>Estimand</code>. Pattern from <code>estimand.py</code>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> MyEstimand(param, treatment<span class="op">=</span><span class="st">"a"</span>, covariates<span class="op">=</span>(<span class="st">"x"</span>,)) <span class="op">-&gt;</span> Estimand:</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    cov <span class="op">=</span> <span class="bu">tuple</span>(covariates)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> m(z, alpha):</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>        x_kwargs <span class="op">=</span> {k: z[k] <span class="cf">for</span> k <span class="kw">in</span> cov}</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        <span class="co"># ...build a LinearForm using +, -, scalar*, alpha(...)...</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> alpha(<span class="op">**</span>{treatment: param, <span class="op">**</span>x_kwargs})</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Estimand(feature_keys<span class="op">=</span>(treatment, <span class="op">*</span>cov), m<span class="op">=</span>m, name<span class="op">=</span><span class="ss">f"MyEstimand(</span><span class="sc">{</span>param<span class="sc">}</span><span class="ss">)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> alpha(<span class="op">**</span>{treatment: param, <span class="op">**</span>x_kwargs})</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> Estimand(feature_keys<span class="op">=</span>(treatment, <span class="op">*</span>cov), m<span class="op">=</span>m, name<span class="op">=</span><span class="ss">f"MyEstimand(</span><span class="sc">{</span>param<span class="sc">}</span><span class="ss">)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Then:</p>
 <ol type="1">
-<li>Export from <code>python/rieszboost/__init__.py</code> (add to the imports and to <code>__all__</code>).</li>
-<li>Add an R wrapper in <code>r/rieszboost/R/rieszboost.R</code> (one-liner that forwards to the Python factory) and <code>@export</code> it.</li>
+<li>Export from <code>python/rieszboost/__init__.py</code> (add to imports and <code>__all__</code>).</li>
+<li>Add an R wrapper in <code>r/rieszboost/R/rieszboost.R</code> and <code>@export</code> it.</li>
 <li>Update <code>docs/estimands.qmd</code> with a row in the built-ins table and a runnable example in both languages.</li>
 <li>Add a test under <code>python/tests/</code>.</li>
+<li>Add a worked example under <code>examples/</code> (per the per-estimand example rule in CLAUDE.md).</li>
 </ol>
-<p>The pre-commit hook will block step (1)/(2) if you forget step (3).</p>
+<p>The pre-commit hook blocks step (1)/(2) without step (3).</p>
 </section>
-<section id="adding-a-new-lossspec" class="level2">
-<h2 class="anchored" data-anchor-id="adding-a-new-lossspec">Adding a new <code>LossSpec</code></h2>
-<p>Implement the seven-method <code>LossSpec</code> protocol from <code>losses.py</code>. <code>SquaredLoss</code> (35 lines) is the simplest template; <code>KLLoss</code> (45 lines) shows how to handle a non-identity link with overflow protection.</p>
+<section id="adding-a-lossspec" class="level2">
+<h2 class="anchored" data-anchor-id="adding-a-lossspec">Adding a <code>LossSpec</code></h2>
+<p>Implement the <code>LossSpec</code> protocol from <code>losses.py</code>. <code>SquaredLoss</code> is the shortest template; <code>KLLoss</code> shows how to handle a non-identity link.</p>
 <ol type="1">
 <li>Add the class to <code>python/rieszboost/losses.py</code>.</li>
 <li>Export from <code>__init__.py</code>.</li>
-<li>Add a one-liner R wrapper.</li>
+<li>Add an R wrapper.</li>
 <li>Add a runnable example to <code>docs/backends-and-losses.qmd</code>.</li>
-<li>Test with <code>pytest python/tests/test_bregman.py</code>.</li>
+<li>Test in <code>python/tests/test_bregman.py</code>.</li>
 </ol>
 </section>
-<section id="adding-a-new-backend" class="level2">
-<h2 class="anchored" data-anchor-id="adding-a-new-backend">Adding a new backend</h2>
-<p>Implement the <code>Backend</code> protocol in <code>python/rieszboost/backends/base.py</code> — one method, <code>fit_augmented(...)</code>, returning a <code>FitResult</code> whose <code>predictor</code> implements <code>predict_eta</code> and <code>predict_alpha</code>. <code>XGBoostBackend</code> and <code>SklearnBackend</code> are the two existing templates; the lightgbm backend is on the roadmap and will follow the xgboost template closely.</p>
-<p>The backend doesn’t need to know about the estimand or the tracer — it sees a finished <code>AugmentedDataset</code> and a <code>LossSpec</code> and returns a fitted predictor.</p>
+<section id="adding-a-backend" class="level2">
+<h2 class="anchored" data-anchor-id="adding-a-backend">Adding a backend</h2>
+<p>Implement the <code>Backend</code> protocol from <code>python/rieszboost/backends/base.py</code>. One method, <code>fit_augmented(...)</code>, returning a <code>FitResult</code> whose <code>predictor</code> implements <code>predict_eta</code> and <code>predict_alpha</code>. <code>XGBoostBackend</code> and <code>SklearnBackend</code> are reference implementations.</p>
+<p>The backend sees an <code>AugmentedDataset</code> and a <code>LossSpec</code>. It does not need to know about the estimand or the tracer.</p>
 </section>
 <section id="living-doc-rule" class="level2">
 <h2 class="anchored" data-anchor-id="living-doc-rule">Living-doc rule</h2>
-<p>Two related rules in CLAUDE.md:</p>
-<ol type="1">
-<li><code>README.md</code> is the public-facing contract. If a change to the library makes any line of the README false, the change is not done until the README is fixed in the same edit.</li>
-<li>The user guide under <code>docs/</code> is the deeper reference. The same rule applies — public-API changes update the relevant <code>.qmd</code> page (in <strong>both</strong> the Python and R tabs where the page is bilingual) in the same commit.</li>
-</ol>
-<p>This is enforced by the pre-commit hook at <code>.githooks/pre-commit</code>. Activate per clone:</p>
+<p>Public-API changes update both <code>README.md</code> and the relevant <code>docs/*.qmd</code> page in the same commit. On bilingual pages, update both the Python and R tabs.</p>
+<p>The pre-commit hook at <code>.githooks/pre-commit</code> enforces this. Activate per clone:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> config core.hooksPath .githooks</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The hook looks at staged files; if any of these are modified:</p>
+<p>If any of these files are staged:</p>
 <ul>
 <li><code>python/rieszboost/{__init__,estimator,estimand,augmentation,losses,diagnostics,tracer}.py</code></li>
 <li><code>python/rieszboost/backends/*.py</code></li>
@@ -541,28 +535,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><code>docs/_quarto.yml</code></li>
 <li><code>README.md</code></li>
 </ul>
-<p>Otherwise the commit is rejected with a clear error pointing at the unmatched files.</p>
-<p>For genuinely doc-irrelevant changes (internal refactor that doesn’t touch any signature, test additions, comment fixes), bypass with <code>git commit --no-verify</code>. That’s the explicit escape hatch — there’s no shame in using it when the situation calls for it.</p>
+<p>The hook also greps the staged diff for two doc anti-patterns and blocks if it finds them: design-decision metacommentary (sentences describing the API’s negative space, e.g.&nbsp;what’s omitted, deferred, or rejected) and AI-flavored hedges (editorial framing, sweeping qualifiers, ornamental noun phrases). The hook’s error message lists concrete bad/good rewrite pairs. Match the <a href="https://stanfordmlgroup.github.io/ngboost/intro.html">ngboost user guide</a> tone: direct, instructive, short.</p>
+<p>For internal refactors that don’t touch any signature, test additions, or comment fixes: <code>git commit --no-verify</code>.</p>
 </section>
 <section id="local-docs-render" class="level2">
 <h2 class="anchored" data-anchor-id="local-docs-render">Local docs render</h2>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> preview docs/        <span class="co"># live-reload at http://localhost:port</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">quarto</span> render docs/         <span class="co"># one-shot build to docs/_site/</span></span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">open</span> docs/_site/index.html</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Renders take ~30s with <code>_freeze/</code> cache (which IS committed to git), ~3 minutes cold. Editing a single <code>.qmd</code> only re-renders that page.</p>
+<p>Renders take ~30s with the committed <code>_freeze/</code> cache, ~3 minutes cold. Editing a single <code>.qmd</code> only re-renders that page.</p>
 </section>
 <section id="ci" class="level2">
 <h2 class="anchored" data-anchor-id="ci">CI</h2>
-<p>The workflow at <a href="https://github.com/alejandroschuler/rieszboost/blob/main/.github/workflows/docs.yml"><code>.github/workflows/docs.yml</code></a> runs on push to <code>main</code> when any of <code>docs/</code>, <code>python/</code>, <code>examples/</code>, or the workflow itself changes. It:</p>
-<ol type="1">
-<li>Checks out the repo (which restores the <code>_freeze/</code> cache).</li>
-<li>Installs Python 3.11, then <code>pip install -e python/</code> plus <code>matplotlib</code>.</li>
-<li>Installs R + <code>knitr</code>, <code>rmarkdown</code>, <code>reticulate</code>.</li>
-<li>Sets up Quarto.</li>
-<li>Renders <code>docs/</code> (re-executing only chapters whose source changed).</li>
-<li>Publishes the rendered <code>_site/</code> to the <code>gh-pages</code> branch.</li>
-</ol>
-<p>The published site lives at <code>https://alejandroschuler.github.io/rieszboost/</code>.</p>
+<p>The workflow at <a href="https://github.com/alejandroschuler/rieszboost/blob/main/.github/workflows/docs.yml"><code>.github/workflows/docs.yml</code></a> runs on push to <code>main</code> when any of <code>docs/</code>, <code>python/</code>, <code>r/</code>, <code>examples/</code>, or the workflow itself changes. It checks out the repo (restoring <code>_freeze/</code>), installs Python 3.11 + <code>rieszboost</code> + <code>matplotlib</code>, installs R + knitr + rmarkdown + reticulate, sets up Quarto, renders, and publishes <code>_site/</code> to the <code>gh-pages</code> branch.</p>
+<p>The site lives at <code>https://alejandroschuler.github.io/rieszboost/</code>.</p>
 
 
 </section>

@@ -81,9 +81,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-21ff0d146334540f3fc50d0f21961610.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-589e085fe78506912fc92237552c30f7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -540,17 +540,17 @@ window.Quarto = {
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function ATE.&lt;locals&gt;.m at 0x7f5cafa62a20&gt;, extra_keys=(), name='ATE', factory_spec={'factory': 'ATE', 'args': {'treatment': 'a', 'covariates': ['x']}})
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function ATE.&lt;locals&gt;.m at 0x117da8e00&gt;, extra_keys=(), name='ATE', factory_spec={'factory': 'ATE', 'args': {'treatment': 'a', 'covariates': ['x']}})
  signature: (z, alpha)</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">TSM</span>(<span class="at">level =</span> <span class="dv">1</span>, <span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function TSM.&lt;locals&gt;.m at 0x7f5cafa627a0&gt;, extra_keys=(), name='TSM(level=1.0)', factory_spec={'factory': 'TSM', 'args': {'level': 1.0, 'treatment': 'a', 'covariates': ['x']}})
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function TSM.&lt;locals&gt;.m at 0x117e5fba0&gt;, extra_keys=(), name='TSM(level=1.0)', factory_spec={'factory': 'TSM', 'args': {'level': 1.0, 'treatment': 'a', 'covariates': ['x']}})
  signature: (z, alpha)</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">LocalShift</span>(<span class="at">delta =</span> <span class="fl">0.3</span>, <span class="at">threshold =</span> <span class="fl">0.7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function LocalShift.&lt;locals&gt;.m at 0x7f5cafac7100&gt;, extra_keys=(), name='LocalShift(delta=0.3, threshold=0.7)', factory_spec={'factory': 'LocalShift', 'args': {'delta': 0.3, 'threshold': 0.7, 'treatment': 'a', 'covariates': ['x']}})
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function LocalShift.&lt;locals&gt;.m at 0x117e7b600&gt;, extra_keys=(), name='LocalShift(delta=0.3, threshold=0.7)', factory_spec={'factory': 'LocalShift', 'args': {'delta': 0.3, 'threshold': 0.7, 'treatment': 'a', 'covariates': ['x']}})
  signature: (z, alpha)</code></pre>
 </div>
 </div>
@@ -649,7 +649,7 @@ window.Quarto = {
 <span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(est)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function m_weighted_contrast at 0x7f5c9ed9a5c0&gt;, extra_keys=(), name='WeightedContrast', factory_spec=None)</code></pre>
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function m_weighted_contrast at 0x13470d8a0&gt;, extra_keys=(), name='WeightedContrast', factory_spec=None)</code></pre>
 </div>
 </div>
 <p>Pass the estimand to <code>RieszBooster</code>:</p>

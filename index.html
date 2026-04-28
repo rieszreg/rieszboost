@@ -45,9 +45,9 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-21ff0d146334540f3fc50d0f21961610.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-589e085fe78506912fc92237552c30f7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -76,6 +76,35 @@ ul.task-list li input[type="checkbox"] {
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -370,7 +399,7 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#how-to-read-this-site" id="toc-how-to-read-this-site" class="nav-link active" data-scroll-target="#how-to-read-this-site">How to read this site</a></li>
+  <li><a href="#pages" id="toc-pages" class="nav-link active" data-scroll-target="#pages">Pages</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/alejandroschuler/rieszboost/edit/main/index.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/alejandroschuler/rieszboost/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -398,22 +427,22 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p><code>rieszboost</code> directly estimates the Riesz representer α₀ of a linear functional θ(P) = E[m(Z, g₀)] — the building block of one-step / TMLE / DML estimators in semiparametric inference — without ever deriving or inverting a propensity-style ratio.</p>
-<p>It implements <a href="https://arxiv.org/abs/2501.04871">Lee &amp; Schuler, <em>RieszBoost</em> (arXiv:2501.04871)</a> with an sklearn-style API in Python and an R6 mirror in R. The R and Python interfaces produce <strong>bitwise-identical</strong> predictions; this guide presents every code example in both languages — pick whichever tab you prefer with the toggle on each page, and your choice persists site-wide.</p>
-<section id="how-to-read-this-site" class="level2">
-<h2 class="anchored" data-anchor-id="how-to-read-this-site">How to read this site</h2>
-<p>If you want to install the package and fit something in 30 lines, the <a href="https://github.com/alejandroschuler/rieszboost">README</a> is the fastest path. This guide is the deeper reference:</p>
+<p><code>rieszboost</code> estimates the Riesz representer <span class="math inline">\(\alpha_0\)</span> of a linear functional <span class="math inline">\(\theta(P) = \mathbb{E}[m(Z, g_0)]\)</span>, the building block of one-step, TMLE, and DML estimators in semiparametric inference. It implements <a href="https://arxiv.org/abs/2501.04871">Lee &amp; Schuler, <em>RieszBoost</em> (arXiv:2501.04871)</a> with an sklearn-style API in Python and an R6 mirror in R.</p>
+<p>R and Python predictions are bitwise-identical on the same input. This guide presents every code example in both languages; pick a tab and your choice persists across the site.</p>
+<section id="pages" class="level2">
+<h2 class="anchored" data-anchor-id="pages">Pages</h2>
 <ul>
-<li><strong><a href="./intro.html">Why and what</a></strong> — what’s a Riesz representer, why estimate it directly.</li>
-<li><strong><a href="./install.html">Install</a></strong> — Python install, optional R wrapper, dependencies.</li>
-<li><strong><a href="./quickstart.html">Quickstart</a></strong> — end-to-end ATE in one page, executable, in both languages.</li>
-<li><strong><a href="./estimands.html">Built-in and custom estimands</a></strong> — <code>ATE</code>, <code>ATT</code>, <code>TSM</code>, <code>AdditiveShift</code>, <code>LocalShift</code>, <code>StochasticIntervention</code>; how to write your own <code>m(z, alpha)</code>.</li>
-<li><strong><a href="./sklearn-integration.html">scikit-learn integration</a></strong> — <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>, <code>clone</code>. (<code>RieszBooster</code> is a <code>BaseEstimator</code>.)</li>
-<li><strong><a href="./diagnostics-and-tuning.html">Diagnostics and tuning</a></strong> — what <code>.diagnose()</code> tells you and how to tune in response.</li>
-<li><strong><a href="./backends-and-losses.html">Backends and losses</a></strong> — swap to <code>SklearnBackend</code> for non-tree base learners; swap to <code>KLLoss</code> for density-ratio targets.</li>
-<li><strong><a href="./r-interface.html">R interface</a></strong> — reticulate setup, parity guarantee, what’s currently Python-only.</li>
-<li><strong><a href="./developing.html">Developing rieszboost</a></strong> — repo layout, tests, how to contribute.</li>
-<li><strong><a href="./references.html">References</a></strong> — papers cited throughout.</li>
+<li><a href="./intro.html">What is a Riesz representer</a> — concepts and motivation.</li>
+<li><a href="./install.html">Install</a> — Python install, optional R wrapper.</li>
+<li><a href="./quickstart.html">Quickstart</a> — end-to-end ATE on a synthetic dataset.</li>
+<li><a href="./estimands.html">Estimands</a> — built-in factories (<code>ATE</code>, <code>ATT</code>, <code>TSM</code>, <code>AdditiveShift</code>, <code>LocalShift</code>, <code>StochasticIntervention</code>) and custom <code>m(z, alpha)</code>.</li>
+<li><a href="./sklearn-integration.html">scikit-learn integration</a> — <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>, <code>clone</code>.</li>
+<li><a href="./diagnostics-and-tuning.html">Diagnostics and tuning</a> — reading <code>.diagnose()</code> and choosing hyperparameters.</li>
+<li><a href="./backends-and-losses.html">Backends and losses</a> — <code>XGBoostBackend</code>, <code>SklearnBackend</code>; <code>SquaredLoss</code>, <code>KLLoss</code>, <code>BernoulliLoss</code>, <code>BoundedSquaredLoss</code>.</li>
+<li><a href="./save-and-load.html">Save and load</a> — serialize fitted boosters across Python and R.</li>
+<li><a href="./r-interface.html">R interface</a> — reticulate setup, R-side API, what’s currently Python-only.</li>
+<li><a href="./developing.html">Developing rieszboost</a> — repo layout, tests, how to contribute.</li>
+<li><a href="./references.html">References</a>.</li>
 </ul>
 <div class="callout callout-style-default callout-tip callout-titled" title="Code execution">
 <div class="callout-header d-flex align-content-center">
@@ -425,7 +454,7 @@ ul.task-list li input[type="checkbox"] {
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Every code block in this guide ran when the site was built. The numbers and figures you see came from the version of <code>rieszboost</code> that produced this page — there are no stale snippets.</p>
+<p>Every code block in this guide ran at build time. The numbers and figures came from the version of <code>rieszboost</code> that produced this page.</p>
 </div>
 </div>
 

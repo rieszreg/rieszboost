@@ -81,9 +81,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-21ff0d146334540f3fc50d0f21961610.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-589e085fe78506912fc92237552c30f7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -406,12 +406,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#one-time-setup" id="toc-one-time-setup" class="nav-link active" data-scroll-target="#one-time-setup">One-time setup</a></li>
-  <li><a href="#api-surface-r-side" id="toc-api-surface-r-side" class="nav-link" data-scroll-target="#api-surface-r-side">API surface (R-side)</a></li>
-  <li><a href="#verifying-parity" id="toc-verifying-parity" class="nav-link" data-scroll-target="#verifying-parity">Verifying parity</a></li>
-  <li><a href="#calling-python-only-features-from-r" id="toc-calling-python-only-features-from-r" class="nav-link" data-scroll-target="#calling-python-only-features-from-r">Calling Python-only features from R</a></li>
-  <li><a href="#escape-hatch" id="toc-escape-hatch" class="nav-link" data-scroll-target="#escape-hatch">Escape hatch</a></li>
-  <li><a href="#whats-not-in-r-yet" id="toc-whats-not-in-r-yet" class="nav-link" data-scroll-target="#whats-not-in-r-yet">What’s not in R yet</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link active" data-scroll-target="#setup">Setup</a></li>
+  <li><a href="#api-surface" id="toc-api-surface" class="nav-link" data-scroll-target="#api-surface">API surface</a></li>
+  <li><a href="#parity" id="toc-parity" class="nav-link" data-scroll-target="#parity">Parity</a></li>
+  <li><a href="#custom-python-objects-from-r" id="toc-custom-python-objects-from-r" class="nav-link" data-scroll-target="#custom-python-objects-from-r">Custom Python objects from R</a></li>
+  <li><a href="#reaching-the-python-object-directly" id="toc-reaching-the-python-object-directly" class="nav-link" data-scroll-target="#reaching-the-python-object-directly">Reaching the Python object directly</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/alejandroschuler/rieszboost/edit/main/r-interface.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/alejandroschuler/rieszboost/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -438,21 +437,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>The R wrapper is an <a href="https://r6.r-lib.org/">R6</a> mirror of the Python <code>RieszBooster</code>. R-side and Python-side predictions are <strong>bitwise-identical</strong> on the same data because the R wrapper delegates every numerical step to Python via <a href="https://rstudio.github.io/reticulate/">reticulate</a> — the R object holds a reference to the underlying Python <code>RieszBooster</code> instance and forwards method calls.</p>
-<p>This page is a focused R reference. The R API is covered throughout the rest of the guide via the bilingual tabsets — install in <a href="./install.html">install.qmd</a>, the standard fit pattern in <a href="./quickstart.html">quickstart.qmd</a>, the full estimand inventory in <a href="./estimands.html">estimands.qmd</a>, and so on.</p>
-<section id="one-time-setup" class="level2">
-<h2 class="anchored" data-anchor-id="one-time-setup">One-time setup</h2>
-<p>After installing <code>rieszboost</code> into a Python venv (see <a href="./install.html">install.qmd</a>):</p>
+<p>The R wrapper is an <a href="https://r6.r-lib.org/">R6</a> class that calls the Python <code>RieszBooster</code> through <a href="https://rstudio.github.io/reticulate/">reticulate</a>. Predictions are bitwise-identical to the Python results on the same input.</p>
+<p>The R API is covered throughout the guide via the bilingual tabsets: see <a href="./install.html">install</a> for setup, <a href="./quickstart.html">quickstart</a> for the standard fit pattern, and <a href="./estimands.html">estimands</a> for the full estimand inventory. This page is the focused R reference.</p>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<p>After installing <code>rieszboost</code> into a Python venv (see <a href="./install.html">install</a>):</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Option A: env var, set before R starts</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">RETICULATE_PYTHON =</span> <span class="st">"/path/to/rieszboost/.venv/bin/python"</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Option B: explicit, after R has started</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">use_python_rieszboost</span>(<span class="st">"/path/to/rieszboost/.venv/bin/python"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>use_python_rieszboost()</code> accepts either a path to a Python interpreter or a path to a virtualenv directory; it forwards to the appropriate reticulate function. It also imports the Python <code>rieszboost</code> module up front so any subsequent <code>ATE()</code>, <code>RieszBooster$new(...)</code>, etc. work without per-call import overhead.</p>
+<p><code>use_python_rieszboost()</code> accepts a path to a Python interpreter or a virtualenv directory and forwards to the appropriate reticulate function. It also imports the Python <code>rieszboost</code> module so subsequent calls have no per-call import overhead.</p>
 </section>
-<section id="api-surface-r-side" class="level2">
-<h2 class="anchored" data-anchor-id="api-surface-r-side">API surface (R-side)</h2>
-<p>Every public Python class and function except the symbolic tracer is exposed in R:</p>
+<section id="api-surface" class="level2">
+<h2 class="anchored" data-anchor-id="api-surface">API surface</h2>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -498,6 +496,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <td><code>rieszboost.KLLoss(max_eta)</code></td>
 </tr>
 <tr class="odd">
+<td><code>BernoulliLoss(max_abs_eta)</code></td>
+<td><code>rieszboost.BernoulliLoss(...)</code></td>
+</tr>
+<tr class="even">
+<td><code>BoundedSquaredLoss(lo, hi, max_abs_eta)</code></td>
+<td><code>rieszboost.BoundedSquaredLoss(...)</code></td>
+</tr>
+<tr class="odd">
 <td><code>XGBoostBackend(hessian_floor, gradient_only)</code></td>
 <td><code>rieszboost.XGBoostBackend(...)</code></td>
 </tr>
@@ -527,19 +533,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr class="even">
 <td>&nbsp;&nbsp;<code>$diagnose(df)</code></td>
-<td><code>.diagnose(X)</code> (returns a list, with <code>$summary</code> as a string)</td>
+<td><code>.diagnose(X)</code> (returns a list with <code>$summary</code> as a string)</td>
+</tr>
+<tr class="odd">
+<td>&nbsp;&nbsp;<code>$save(path)</code></td>
+<td><code>.save(path)</code></td>
+</tr>
+<tr class="even">
+<td><code>load_riesz_booster(path)</code></td>
+<td><code>RieszBooster.load(path)</code></td>
 </tr>
 <tr class="odd">
 <td>&nbsp;&nbsp;<code>$py</code></td>
-<td>the underlying Python object (escape hatch)</td>
+<td>the underlying Python object</td>
 </tr>
 </tbody>
 </table>
-<p>R6’s <code>$method()</code> syntax invariably maps to Python’s <code>.method()</code>. Integer-typed kwargs (<code>n_estimators</code>, <code>max_depth</code>, <code>random_state</code>, <code>early_stopping_rounds</code>) need an <code>L</code> suffix in R, e.g.&nbsp;<code>n_estimators = 200L</code>. Other kwargs are auto-converted by reticulate.</p>
+<p>R6’s <code>$method()</code> syntax maps to Python’s <code>.method()</code>. Integer-typed kwargs (<code>n_estimators</code>, <code>max_depth</code>, <code>random_state</code>, <code>early_stopping_rounds</code>) take an <code>L</code> suffix in R: <code>n_estimators = 200L</code>. Other kwargs are auto-converted by reticulate.</p>
 </section>
-<section id="verifying-parity" class="level2">
-<h2 class="anchored" data-anchor-id="verifying-parity">Verifying parity</h2>
-<p>The parity claim is not aspirational — it’s tested in CI. Here’s the same fit run from both languages, comparing predictions row-by-row.</p>
+<section id="parity" class="level2">
+<h2 class="anchored" data-anchor-id="parity">Parity</h2>
+<p>The same fit produces the same predictions in both languages. The R test suite verifies this with <code>tolerance = 1e-12</code>.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -586,63 +600,34 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<p>(The two RNGs are different — Python’s <code>default_rng(0)</code> and R’s <code>set.seed(0)</code> give different <code>x</code> and <code>a</code> columns, so <code>alpha_py</code> and <code>alpha_r</code> are not directly comparable here. To verify parity end-to-end, generate the data in one language, pass it to the other via reticulate, and compare predictions on the <em>same</em> <code>df</code>. The R package’s test suite includes exactly that test.)</p>
+<p>The two columns above use different RNGs (<code>default_rng(0)</code> versus <code>set.seed(0)</code>), so the <code>df</code> and the predictions differ between tabs. To verify parity end-to-end, fit on the same data in both languages and compare predictions row-by-row.</p>
 </section>
-<section id="calling-python-only-features-from-r" class="level2">
-<h2 class="anchored" data-anchor-id="calling-python-only-features-from-r">Calling Python-only features from R</h2>
-<p>The <code>LinearForm</code> tracer is Python-only — for now, custom estimands (those needing the tracer) require defining <code>m()</code> in Python. From R you can still drive a custom Python <code>m()</code> end-to-end via reticulate:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define a custom m in Python (e.g. in a script you `source` from R)</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">py_run_string</span>(<span class="st">"</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="st">def m_my_thing(z, alpha):</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="st">    return 2.0 * (alpha(a=2, x=z['x']) - alpha(a=0, x=z['x']))</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="st">from rieszboost import Estimand</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="st">my_estimand = Estimand(feature_keys=('a', 'x'), m=m_my_thing, name='MyThing')</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="st">"</span>)</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>est <span class="ot">&lt;-</span> reticulate<span class="sc">::</span>py<span class="sc">$</span>my_estimand</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(<span class="at">estimand =</span> est, <span class="at">n_estimators =</span> <span class="dv">100</span>L, <span class="at">max_depth =</span> <span class="dv">3</span>L)</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df_r)</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">predict</span>(df_r)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The same pattern works for custom <code>LossSpec</code> subclasses: define the class in Python, grab the instance via <code>reticulate::py$...</code>, pass to <code>RieszBooster$new(loss = ...)</code>.</p>
+<section id="custom-python-objects-from-r" class="level2">
+<h2 class="anchored" data-anchor-id="custom-python-objects-from-r">Custom Python objects from R</h2>
+<p>The <code>LinearForm</code> tracer is Python-only. To use a custom estimand or <code>LossSpec</code> subclass from R, define it in Python via reticulate:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">py_run_string</span>(<span class="st">"</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="st">def m_my_thing(z, alpha):</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="st">    return 2.0 * (alpha(a=2, x=z['x']) - alpha(a=0, x=z['x']))</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="st">from rieszboost import Estimand</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="st">my_estimand = Estimand(feature_keys=('a', 'x'), m=m_my_thing, name='MyThing')</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="st">"</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>est <span class="ot">&lt;-</span> reticulate<span class="sc">::</span>py<span class="sc">$</span>my_estimand</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(<span class="at">estimand =</span> est, <span class="at">n_estimators =</span> <span class="dv">100</span>L, <span class="at">max_depth =</span> <span class="dv">3</span>L)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df_r)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">predict</span>(df_r)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The same pattern works for custom <code>LossSpec</code> subclasses: subclass in Python and pass the instance via <code>loss=</code>.</p>
 </section>
-<section id="escape-hatch" class="level2">
-<h2 class="anchored" data-anchor-id="escape-hatch">Escape hatch</h2>
-<p>Every R6 method ultimately calls into the underlying Python object. If something isn’t yet wrapped, you can always reach through:</p>
+<section id="reaching-the-python-object-directly" class="level2">
+<h2 class="anchored" data-anchor-id="reaching-the-python-object-directly">Reaching the Python object directly</h2>
+<p><code>booster$py</code> is the underlying Python <code>RieszBooster</code>. Use it for attributes the R6 wrapper doesn’t expose:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(<span class="at">estimand =</span> <span class="fu">ATE</span>(), <span class="at">n_estimators =</span> <span class="dv">50</span>L)</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df_r)</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># These exist on the Python side:</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">py_to_r</span>(booster<span class="sc">$</span>py<span class="sc">$</span>best_iteration_)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">py_to_r</span>(booster<span class="sc">$</span>py<span class="sc">$</span>best_score_)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">py_to_r</span>(booster<span class="sc">$</span>py<span class="sc">$</span>base_score_)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The <code>$py</code> field is the underlying Python object; reticulate handles the conversion both ways. Use this for occasional access to attributes the R6 wrapper doesn’t expose; if you find yourself using it constantly, file an issue and we’ll add an R-side accessor.</p>
-</section>
-<section id="whats-not-in-r-yet" class="level2">
-<h2 class="anchored" data-anchor-id="whats-not-in-r-yet">What’s not in R yet</h2>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 50%">
-<col style="width: 50%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Feature</th>
-<th>Workaround</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Custom <code>m()</code> for new estimands (the symbolic tracer is Python-only)</td>
-<td>Define <code>m()</code> in Python via <code>reticulate::py_run_string</code>, then pass the resulting <code>Estimand</code> to <code>RieszBooster$new(estimand=...)</code>. See above.</td>
-</tr>
-<tr class="even">
-<td>Custom <code>LossSpec</code> subclasses</td>
-<td>Same pattern: subclass in Python via <code>reticulate::py_run_string</code>, pass via <code>loss=</code>.</td>
-</tr>
-</tbody>
-</table>
-<p>Everything else — every built-in estimand, both backends, both losses, the full <code>RieszBooster</code> API including <code>cross_val_predict</code> via reticulate (see <a href="./sklearn-integration.html">sklearn-integration.qmd</a>) — is first-class in R.</p>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">py_to_r</span>(booster<span class="sc">$</span>py<span class="sc">$</span>best_iteration_)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">py_to_r</span>(booster<span class="sc">$</span>py<span class="sc">$</span>best_score_)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>reticulate<span class="sc">::</span><span class="fu">py_to_r</span>(booster<span class="sc">$</span>py<span class="sc">$</span>base_score_)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 
 
 </section>

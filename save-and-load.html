@@ -81,9 +81,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-21ff0d146334540f3fc50d0f21961610.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-589e085fe78506912fc92237552c30f7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -436,7 +436,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>A fitted <code>RieszBooster</code> serializes to a directory containing the model binary plus a JSON metadata sidecar (loss spec, estimand identity, feature schema, base score, best iteration). Built-in estimands are reconstructed automatically on load; custom estimands have to be re-passed.</p>
+<p>A fitted <code>RieszBooster</code> serializes to a directory containing the model binary and a JSON metadata sidecar (loss spec, estimand identity, feature schema, base score, best iteration). Built-in estimands are reconstructed automatically on load. Custom estimands must be re-passed.</p>
 <section id="round-trip" class="level2">
 <h2 class="anchored" data-anchor-id="round-trip">Round-trip</h2>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
@@ -517,13 +517,13 @@ best_iteration preserved : 199</code></pre>
 </section>
 <section id="cross-language" class="level2">
 <h2 class="anchored" data-anchor-id="cross-language">Cross-language</h2>
-<p>Save in one language, load in the other. The on-disk format is the same — the xgboost model is xgboost’s native UBJSON, and the metadata sidecar is plain JSON.</p>
+<p>Save in one language, load in the other. The xgboost model is xgboost’s native UBJSON, and the metadata sidecar is plain JSON.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># In R: save the booster</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">save</span>(<span class="st">"alpha_ate"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># In Python: load the same directory and continue working</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>loaded <span class="op">=</span> RieszBooster.load(<span class="st">"alpha_ate"</span>)</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>loaded.predict(new_df)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>The R parity test exercises both directions with <code>tolerance = 1e-12</code>, and our test suite asserts that predictions are bitwise-identical pre- and post-save.</p>
+<p>The R parity test exercises both directions with <code>tolerance = 1e-12</code>. The Python suite asserts that predictions are bitwise-identical pre- and post-save.</p>
 </section>
 <section id="custom-estimands" class="level2">
 <h2 class="anchored" data-anchor-id="custom-estimands">Custom estimands</h2>
@@ -560,7 +560,7 @@ best_iteration preserved : 199</code></pre>
 <span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>    loaded <span class="op">=</span> RieszBooster.load(p, estimand<span class="op">=</span>custom)</span>
 <span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"loaded with custom estimand OK"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>expected error: Saved booster at /var/folders/07/xf4cwwjd7nggpmy8y006ww6w0000gq/T/tmp5c_p3xms/cu ...
+<pre><code>expected error: Saved booster at /var/folders/07/xf4cwwjd7nggpmy8y006ww6w0000gq/T/tmpn4ome9bt/cu ...
 loaded with custom estimand OK</code></pre>
 </div>
 </div>
