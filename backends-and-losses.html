@@ -81,9 +81,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-21ff0d146334540f3fc50d0f21961610.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-6dce83697ef593b6f21f66f8d1a1696b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-589e085fe78506912fc92237552c30f7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-471f0014554f81eb40722b8717d96524.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -437,10 +437,7 @@ window.Quarto = {
   <ul>
   <li><a href="#the-default-backend-xgboostbackend" id="toc-the-default-backend-xgboostbackend" class="nav-link active" data-scroll-target="#the-default-backend-xgboostbackend">The default backend: <code>XGBoostBackend</code></a></li>
   <li><a href="#sklearnbackend-gradient-boosting-on-any-base-learner" id="toc-sklearnbackend-gradient-boosting-on-any-base-learner" class="nav-link" data-scroll-target="#sklearnbackend-gradient-boosting-on-any-base-learner"><code>SklearnBackend</code>: gradient boosting on any base learner</a></li>
-  <li><a href="#losses" id="toc-losses" class="nav-link" data-scroll-target="#losses">Losses</a>
-  <ul class="collapse">
-  <li><a href="#boundedsquaredloss-for-hard-prior-bounds" id="toc-boundedsquaredloss-for-hard-prior-bounds" class="nav-link" data-scroll-target="#boundedsquaredloss-for-hard-prior-bounds"><code>BoundedSquaredLoss</code> for hard prior bounds</a></li>
-  </ul></li>
+  <li><a href="#losses-squaredloss-and-klloss" id="toc-losses-squaredloss-and-klloss" class="nav-link" data-scroll-target="#losses-squaredloss-and-klloss">Losses: <code>SquaredLoss</code> and <code>KLLoss</code></a></li>
   <li><a href="#custom-losses" id="toc-custom-losses" class="nav-link" data-scroll-target="#custom-losses">Custom losses</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/alejandroschuler/rieszboost/edit/main/backends-and-losses.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/alejandroschuler/rieszboost/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
@@ -572,58 +569,10 @@ window.Quarto = {
 </div>
 </div>
 </section>
-<section id="losses" class="level2">
-<h2 class="anchored" data-anchor-id="losses">Losses</h2>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Loss</th>
-<th>Potential <span class="math inline">\(\phi\)</span></th>
-<th>Link <span class="math inline">\(\eta \to \alpha\)</span></th>
-<th>Domain</th>
-<th>When to reach for it</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><code>SquaredLoss</code></td>
-<td><span class="math inline">\(t^2\)</span></td>
-<td>identity</td>
-<td><span class="math inline">\(\mathbb{R}\)</span></td>
-<td>Default. Right choice for almost every estimand.</td>
-</tr>
-<tr class="even">
-<td><code>KLLoss</code></td>
-<td><span class="math inline">\(t \log t\)</span></td>
-<td>exp</td>
-<td><span class="math inline">\((0, \infty)\)</span></td>
-<td>Density-ratio targets (TSM, IPSI). Guarantees <span class="math inline">\(\hat\alpha &gt; 0\)</span>. Requires all <span class="math inline">\(m\)</span>-coefficients <span class="math inline">\(\geq 0\)</span>.</td>
-</tr>
-<tr class="odd">
-<td><code>BernoulliLoss</code></td>
-<td><span class="math inline">\(t \log t + (1-t)\log(1-t)\)</span></td>
-<td>sigmoid</td>
-<td><span class="math inline">\((0, 1)\)</span></td>
-<td><span class="math inline">\(\alpha_0\)</span> known to lie in <span class="math inline">\((0, 1)\)</span> by problem structure (rare for representers; saturates at the bounds otherwise). Same coefficient-sign restriction as <code>KLLoss</code>.</td>
-</tr>
-<tr class="even">
-<td><code>BoundedSquaredLoss(lo, hi)</code></td>
-<td><span class="math inline">\(t^2\)</span> + sigmoid-scaled link</td>
-<td><span class="math inline">\(\mathrm{lo} + (\mathrm{hi}-\mathrm{lo}) \cdot \sigma\)</span></td>
-<td><span class="math inline">\((\mathrm{lo}, \mathrm{hi})\)</span></td>
-<td>Squared-loss fits with hard prior bounds (e.g.&nbsp;trimmed-propensity ratios). Pick bounds tightly around <span class="math inline">\(\alpha_0\)</span> — generous bounds saturate the link and slow boosting.</td>
-</tr>
-</tbody>
-</table>
-<p><code>SquaredLoss</code> is the standard Lee-Schuler / Chernozhukov objective: <span class="math inline">\(\phi(t) = t^2\)</span>, identity link <span class="math inline">\(\eta = \alpha\)</span>. Per-row loss <span class="math inline">\(a \cdot \alpha^2 + b \cdot \alpha\)</span>.</p>
-<p><code>KLLoss</code> (<span class="math inline">\(\phi(t) = t \log t\)</span>, exp link) targets density ratios. The exponential link guarantees <span class="math inline">\(\hat\alpha &gt; 0\)</span> regardless of leaf updates.</p>
+<section id="losses-squaredloss-and-klloss" class="level2">
+<h2 class="anchored" data-anchor-id="losses-squaredloss-and-klloss">Losses: <code>SquaredLoss</code> and <code>KLLoss</code></h2>
+<p>The default <code>SquaredLoss</code> is the standard Lee-Schuler / Chernozhukov objective: <span class="math inline">\(\phi(t) = t^2\)</span>, identity link <span class="math inline">\(\eta = \alpha\)</span>. Per-row loss <span class="math inline">\(a \cdot \alpha^2 + b \cdot \alpha\)</span>. This is the right choice for almost every estimand.</p>
+<p><code>KLLoss</code> (<span class="math inline">\(\phi(t) = t \log t\)</span>, exp link <span class="math inline">\(\alpha = e^\eta\)</span>) is for <strong>density-ratio targets</strong> — TSM, IPSI, anything where <span class="math inline">\(\alpha_0\)</span> is a non-negative density ratio. The exponential link guarantees <span class="math inline">\(\hat\alpha &gt; 0\)</span> regardless of leaf updates, which can stabilize density-ratio fits where the squared loss would let <span class="math inline">\(\hat\alpha\)</span> go negative through extrapolation.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -689,60 +638,6 @@ window.Quarto = {
 <p>On the augmented dataset, pure-counterfactual rows (a=0, b&lt;0) have no minimum in η under KL — leaf weights at low-overlap points can extrapolate. The squared loss is structurally more stable; reach for KL only when its positivity guarantee is genuinely needed.</p>
 </div>
 </div>
-<section id="boundedsquaredloss-for-hard-prior-bounds" class="level3">
-<h3 class="anchored" data-anchor-id="boundedsquaredloss-for-hard-prior-bounds"><code>BoundedSquaredLoss</code> for hard prior bounds</h3>
-<p>If you know <span class="math inline">\(\alpha_0 \in [\text{lo}, \text{hi}]\)</span> (e.g.&nbsp;you’ve trimmed propensities to <span class="math inline">\([\varepsilon, 1-\varepsilon]\)</span> so <span class="math inline">\(1/\pi \in [1, 1/\varepsilon]\)</span>), <code>BoundedSquaredLoss(lo, hi)</code> keeps predictions in that box via a sigmoid-scaled link. The per-row loss in <span class="math inline">\(\alpha\)</span>-space is unchanged from <code>SquaredLoss</code>; the link reparameterizes <span class="math inline">\(\eta\)</span> so <span class="math inline">\(\hat\alpha\)</span> saturates at the bounds rather than extrapolating past them.</p>
-<div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href="">R</a></li></ul>
-<div class="tab-content" data-group="lang">
-<div id="tabset-3-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-3-1-tab">
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> BoundedSquaredLoss</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>booster <span class="op">=</span> RieszBooster(</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>TSM(level<span class="op">=</span><span class="dv">1</span>),</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    loss<span class="op">=</span>BoundedSquaredLoss(lo<span class="op">=</span><span class="fl">0.0</span>, hi<span class="op">=</span><span class="fl">12.0</span>),</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">200</span>, learning_rate<span class="op">=</span><span class="fl">0.05</span>, max_depth<span class="op">=</span><span class="dv">3</span>,</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>).fit(df)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="op">=</span> booster.predict(df)</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"alpha_hat in (</span><span class="sc">{</span>alpha_hat<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">, </span><span class="sc">{</span>alpha_hat<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.3f}</span><span class="ss">)  (bounded by construction)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>alpha_hat in (0.267, 11.751)  (bounded by construction)</code></pre>
-</div>
-</div>
-</div>
-<div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">TSM</span>(<span class="at">level =</span> <span class="dv">1</span>),</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">loss =</span> <span class="fu">BoundedSquaredLoss</span>(<span class="at">lo =</span> <span class="fl">0.0</span>, <span class="at">hi =</span> <span class="fl">12.0</span>),</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">200</span>L, <span class="at">learning_rate =</span> <span class="fl">0.05</span>, <span class="at">max_depth =</span> <span class="dv">3</span>L</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>booster<span class="sc">$</span><span class="fu">fit</span>(df)</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="ot">&lt;-</span> booster<span class="sc">$</span><span class="fu">predict</span>(df)</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"alpha_hat in (%.3f, %.3f)  (bounded by construction)</span><span class="sc">\n</span><span class="st">"</span>,</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>            <span class="fu">min</span>(alpha_hat), <span class="fu">max</span>(alpha_hat)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>alpha_hat in (0.267, 11.812)  (bounded by construction)</code></pre>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="callout callout-style-default callout-tip callout-titled" title="Pick bounds tightly">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>Pick bounds tightly
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>Generous bounds make the sigmoid link saturate over most of <span class="math inline">\(\eta\)</span>, so boosting steps barely move predictions. Set <code>lo</code> and <code>hi</code> to your actual prior on <span class="math inline">\(\alpha_0\)</span>, not safe-but-loose extremes.</p>
-</div>
-</div>
-<p><code>BernoulliLoss</code> is the same idea with <span class="math inline">\(\text{lo}=0\)</span>, <span class="math inline">\(\text{hi}=1\)</span> and the natural Bernoulli Bregman potential — only useful when <span class="math inline">\(\alpha_0\)</span> is genuinely a probability.</p>
-</section>
 </section>
 <section id="custom-losses" class="level2">
 <h2 class="anchored" data-anchor-id="custom-losses">Custom losses</h2>
@@ -760,23 +655,23 @@ window.Quarto = {
 </div>
 </div>
 <p>The <code>LossSpec</code> protocol is small. Implement six methods:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LossSpec(Protocol):</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> link_to_alpha(<span class="va">self</span>, eta: np.ndarray) <span class="op">-&gt;</span> np.ndarray:</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Inverse link: convert boosted output η to α."""</span></span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> alpha_to_eta(<span class="va">self</span>, alpha):</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Forward link: convert α to η (used for `init=` translation)."""</span></span>
-<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> loss_row(<span class="va">self</span>, a, b, alpha):</span>
-<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Per-row loss in α space: a·ψ(α) + (b/2)·φ'(α)."""</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> gradient(<span class="va">self</span>, a, b, eta):</span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""∂loss_row/∂η, using α = link_to_alpha(η)."""</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> hessian(<span class="va">self</span>, a, b, eta, hessian_floor):</span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""∂²loss_row/∂η² (floored)."""</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> default_init_alpha(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Sensible α-space default for `init=` if user doesn't override."""</span></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> validate_coefficients(<span class="va">self</span>, b: np.ndarray) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Raise if (a, b) violate this loss's domain."""</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LossSpec(Protocol):</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> link_to_alpha(<span class="va">self</span>, eta: np.ndarray) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Inverse link: convert boosted output η to α."""</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> alpha_to_eta(<span class="va">self</span>, alpha):</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Forward link: convert α to η (used for `init=` translation)."""</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> loss_row(<span class="va">self</span>, a, b, alpha):</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Per-row loss in α space: a·ψ(α) + (b/2)·φ'(α)."""</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> gradient(<span class="va">self</span>, a, b, eta):</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""∂loss_row/∂η, using α = link_to_alpha(η)."""</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> hessian(<span class="va">self</span>, a, b, eta, hessian_floor):</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""∂²loss_row/∂η² (floored)."""</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> default_init_alpha(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Sensible α-space default for `init=` if user doesn't override."""</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> validate_coefficients(<span class="va">self</span>, b: np.ndarray) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Raise if (a, b) violate this loss's domain."""</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>SquaredLoss</code> (35 lines) and <code>KLLoss</code> (45 lines) in <a href="https://github.com/alejandroschuler/rieszboost/blob/main/python/rieszboost/losses.py"><code>python/rieszboost/losses.py</code></a> are the templates. Anything you implement composes with both backends and every estimand without further changes.</p>
 <p>The Bregman extension follows Hines &amp; Miles (<a href="https://arxiv.org/abs/2510.16127">2510.16127</a>) and Kato (<a href="https://arxiv.org/abs/2601.07752">2601.07752</a>) — for the math, those are the references.</p>
 
