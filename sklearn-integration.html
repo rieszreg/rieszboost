@@ -435,10 +435,10 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#cross-fitting-for-downstream-inference" id="toc-cross-fitting-for-downstream-inference" class="nav-link active" data-scroll-target="#cross-fitting-for-downstream-inference">Cross-fitting for downstream inference</a></li>
-  <li><a href="#hyperparameter-search-with-gridsearchcv" id="toc-hyperparameter-search-with-gridsearchcv" class="nav-link" data-scroll-target="#hyperparameter-search-with-gridsearchcv">Hyperparameter search with <code>GridSearchCV</code></a></li>
-  <li><a href="#what-composability-buys-you" id="toc-what-composability-buys-you" class="nav-link" data-scroll-target="#what-composability-buys-you">What composability buys you</a></li>
-  <li><a href="#where-next" id="toc-where-next" class="nav-link" data-scroll-target="#where-next">Where next</a></li>
+  <li><a href="#cross-fitting" id="toc-cross-fitting" class="nav-link active" data-scroll-target="#cross-fitting">Cross-fitting</a></li>
+  <li><a href="#hyperparameter-search" id="toc-hyperparameter-search" class="nav-link" data-scroll-target="#hyperparameter-search">Hyperparameter search</a></li>
+  <li><a href="#other-sklearn-integrations" id="toc-other-sklearn-integrations" class="nav-link" data-scroll-target="#other-sklearn-integrations">Other sklearn integrations</a></li>
+  <li><a href="#see-also" id="toc-see-also" class="nav-link" data-scroll-target="#see-also">See also</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/alejandroschuler/rieszboost/edit/main/sklearn-integration.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/alejandroschuler/rieszboost/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -465,10 +465,10 @@ window.Quarto = {
 </header>
 
 
-<p><code>RieszBooster</code> is an <code>sklearn.base.BaseEstimator</code>. Anything in <code>sklearn.model_selection</code> works on it without adapter code: cross-fitting, hyperparameter search, pipelines, model cloning. <strong>There is intentionally no bespoke <code>crossfit()</code> function</strong> — the design rule is to lean on scikit-learn’s well-tested machinery rather than reinvent it.</p>
-<section id="cross-fitting-for-downstream-inference" class="level2">
-<h2 class="anchored" data-anchor-id="cross-fitting-for-downstream-inference">Cross-fitting for downstream inference</h2>
-<p>Plug-in <span class="math inline">\(\hat\alpha\)</span> in a one-step / TMLE / DML estimator must be <strong>out-of-fold</strong> to avoid bias from over-fitting. <code>cross_val_predict</code> does this for any sklearn estimator.</p>
+<p><code>RieszBooster</code> is an <code>sklearn.base.BaseEstimator</code>. It composes with <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>, <code>clone</code>, and the rest of <code>sklearn.model_selection</code>.</p>
+<section id="cross-fitting" class="level2">
+<h2 class="anchored" data-anchor-id="cross-fitting">Cross-fitting</h2>
+<p>Plug-in <span class="math inline">\(\hat\alpha\)</span> in a one-step / TMLE / DML estimator must be out-of-fold. Use <code>cross_val_predict</code>:</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -511,22 +511,21 @@ window.Quarto = {
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>a  <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, pi)</span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">a =</span> <span class="fu">as.numeric</span>(a), <span class="at">x =</span> x)</span>
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># The cleanest cross-fit from R is to call the sklearn function via</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># reticulate, passing the underlying Python estimator object. The R6 wrapper</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># exposes it as `$py`.</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>sk_ms <span class="ot">&lt;-</span> reticulate<span class="sc">::</span><span class="fu">import</span>(<span class="st">"sklearn.model_selection"</span>, <span class="at">convert =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">ATE</span>(),</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">2000</span>L,</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">early_stopping_rounds =</span> <span class="dv">20</span>L,</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">validation_fraction =</span> <span class="fl">0.2</span>,</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">learning_rate =</span> <span class="fl">0.05</span>,</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">max_depth =</span> <span class="dv">4</span>L</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>alpha_oof <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(reticulate<span class="sc">::</span><span class="fu">py_to_r</span>(</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  sk_ms<span class="sc">$</span><span class="fu">cross_val_predict</span>(booster<span class="sc">$</span>py, reticulate<span class="sc">::</span><span class="fu">r_to_py</span>(df), <span class="at">cv =</span> <span class="dv">5</span>L)</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>))</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(alpha_oof); <span class="fu">head</span>(alpha_oof)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Call sklearn directly via reticulate, passing the underlying Python</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># estimator from `booster$py`.</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>sk_ms <span class="ot">&lt;-</span> reticulate<span class="sc">::</span><span class="fu">import</span>(<span class="st">"sklearn.model_selection"</span>, <span class="at">convert =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>booster <span class="ot">&lt;-</span> RieszBooster<span class="sc">$</span><span class="fu">new</span>(</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">estimand =</span> <span class="fu">ATE</span>(),</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">n_estimators =</span> <span class="dv">2000</span>L,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">early_stopping_rounds =</span> <span class="dv">20</span>L,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">validation_fraction =</span> <span class="fl">0.2</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">learning_rate =</span> <span class="fl">0.05</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">max_depth =</span> <span class="dv">4</span>L</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>alpha_oof <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(reticulate<span class="sc">::</span><span class="fu">py_to_r</span>(</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  sk_ms<span class="sc">$</span><span class="fu">cross_val_predict</span>(booster<span class="sc">$</span>py, reticulate<span class="sc">::</span><span class="fu">r_to_py</span>(df), <span class="at">cv =</span> <span class="dv">5</span>L)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(alpha_oof); <span class="fu">head</span>(alpha_oof)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 2000</code></pre>
 </div>
@@ -537,11 +536,11 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>Each fold runs its own internal early-stopping split — there is nothing to thread between folds.</p>
+<p>Each fold runs its own internal early-stopping split.</p>
 </section>
-<section id="hyperparameter-search-with-gridsearchcv" class="level2">
-<h2 class="anchored" data-anchor-id="hyperparameter-search-with-gridsearchcv">Hyperparameter search with <code>GridSearchCV</code></h2>
-<p>Score is <strong>negative</strong> held-out Riesz loss (sklearn convention: higher is better), so <code>GridSearchCV</code> selects the configuration with the smallest loss without any sign-flipping on your end.</p>
+<section id="hyperparameter-search" class="level2">
+<h2 class="anchored" data-anchor-id="hyperparameter-search">Hyperparameter search</h2>
+<p><code>RieszBooster.score(X)</code> returns negative held-out Riesz loss, so <code>GridSearchCV</code> selects the configuration with the lowest loss.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -569,7 +568,7 @@ window.Quarto = {
 <div class="cell-output cell-output-stdout">
 <pre><code>best score (neg Riesz loss): 5.8153</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>best <span class="op">=</span> grid.best_estimator_  <span class="co"># already a refitted RieszBooster</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>best <span class="op">=</span> grid.best_estimator_</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>alpha_hat <span class="op">=</span> best.predict(df)</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>alpha_hat[:<span class="dv">5</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
@@ -601,7 +600,7 @@ window.Quarto = {
 <pre><code>GridSearchCV(cv=3,
              estimator=RieszBooster(early_stopping_rounds=20,
                                     estimand=Estimand(feature_keys=('a', 'x'),
-                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x13e1afc40&gt;,
+                                                      m=&lt;function ATE.&lt;locals&gt;.m at 0x7f0fbad6e7a0&gt;,
                                                       extra_keys=(),
                                                       name='ATE',
                                                       factory_spec={'args': {'covariates': ['x'],
@@ -633,22 +632,21 @@ $max_depth
 </div>
 </div>
 </section>
-<section id="what-composability-buys-you" class="level2">
-<h2 class="anchored" data-anchor-id="what-composability-buys-you">What composability buys you</h2>
-<p>Because <code>RieszBooster</code> is a regular <code>BaseEstimator</code>:</p>
+<section id="other-sklearn-integrations" class="level2">
+<h2 class="anchored" data-anchor-id="other-sklearn-integrations">Other sklearn integrations</h2>
+<p><code>RieszBooster</code> exposes the standard <code>BaseEstimator</code> interface:</p>
 <ul>
-<li><strong><code>clone(booster)</code></strong> returns a fresh unfitted copy with the same hyperparameters — useful when you want to fit the same configuration on multiple data subsets.</li>
-<li><strong><code>Pipeline</code></strong> can wrap a feature-engineering step in front of the booster.</li>
-<li><strong><code>HalvingGridSearchCV</code>, <code>RandomizedSearchCV</code>, <code>BayesSearchCV</code></strong> (skopt) all work without modification.</li>
-<li><strong><code>get_params()</code> / <code>set_params()</code></strong> introspect/mutate the configuration; this is what the search classes use under the hood.</li>
+<li><code>clone(booster)</code> returns a fresh unfitted copy with the same hyperparameters.</li>
+<li><code>Pipeline</code> wraps a feature-engineering step in front of the booster.</li>
+<li><code>HalvingGridSearchCV</code>, <code>RandomizedSearchCV</code>, <code>BayesSearchCV</code> (skopt) work without modification.</li>
+<li><code>get_params()</code> / <code>set_params()</code> are used by the search classes to introspect and mutate the configuration.</li>
 </ul>
-<p>The general principle: anywhere scikit-learn’s documentation says “any sklearn estimator,” <code>RieszBooster</code> slots in.</p>
 </section>
-<section id="where-next" class="level2">
-<h2 class="anchored" data-anchor-id="where-next">Where next</h2>
+<section id="see-also" class="level2">
+<h2 class="anchored" data-anchor-id="see-also">See also</h2>
 <ul>
-<li>For an end-to-end EEE estimator that consumes <code>alpha_oof</code> as the Riesz weight, see <a href="https://github.com/alejandroschuler/rieszboost/blob/main/examples/lee_schuler/binary_dgp.py"><code>examples/lee_schuler/binary_dgp.py</code></a> in the repo.</li>
-<li>For tuning intuition (which knobs matter for <span class="math inline">\(\hat\alpha\)</span> specifically), see <a href="./diagnostics-and-tuning.html">diagnostics and tuning</a>.</li>
+<li><a href="https://github.com/alejandroschuler/rieszboost/blob/main/examples/lee_schuler/binary_dgp.py"><code>examples/lee_schuler/binary_dgp.py</code></a> builds an EEE estimator using <code>cross_val_predict</code> to produce out-of-fold <span class="math inline">\(\hat\alpha\)</span>.</li>
+<li><a href="./diagnostics-and-tuning.html">Diagnostics and tuning</a> covers which hyperparameters to vary in a grid search.</li>
 </ul>
 
 

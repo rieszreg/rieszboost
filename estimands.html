@@ -468,7 +468,7 @@ window.Quarto = {
 </header>
 
 
-<p>An <strong>estimand</strong> in <code>rieszboost</code> is a self-contained description of the linear functional you want to fit. It carries (a) the column names <span class="math inline">\(\alpha\)</span> is indexed by, (b) any per-row payload columns <span class="math inline">\(m\)</span> needs (e.g.&nbsp;pre-sampled treatments for stochastic interventions), and (c) the opaque <code>m(z, alpha)</code> callable itself. The <code>RieszBooster</code> reads this off the estimand object — there’s no separate <code>feature_keys=</code> argument.</p>
+<p>An <code>Estimand</code> describes the linear functional you want to fit. It holds three pieces of information: the column names <span class="math inline">\(\alpha\)</span> is indexed by (<code>feature_keys</code>), any per-row payload columns <span class="math inline">\(m\)</span> needs such as pre-sampled treatments for stochastic interventions (<code>extra_keys</code>), and the <code>m(z, alpha)</code> callable.</p>
 <p>This page covers the six built-in factories and how to write your own.</p>
 <section id="built-in-factories" class="level2">
 <h2 class="anchored" data-anchor-id="built-in-factories">Built-in factories</h2>
@@ -513,7 +513,7 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<p>Same call sites in both languages — kwargs match.</p>
+<p>The R and Python factories take the same arguments.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -540,17 +540,17 @@ window.Quarto = {
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ATE</span>(<span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function ATE.&lt;locals&gt;.m at 0x7fb500862a20&gt;, extra_keys=(), name='ATE', factory_spec={'factory': 'ATE', 'args': {'treatment': 'a', 'covariates': ['x']}})
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function ATE.&lt;locals&gt;.m at 0x7f5cafa62a20&gt;, extra_keys=(), name='ATE', factory_spec={'factory': 'ATE', 'args': {'treatment': 'a', 'covariates': ['x']}})
  signature: (z, alpha)</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">TSM</span>(<span class="at">level =</span> <span class="dv">1</span>, <span class="at">treatment =</span> <span class="st">"a"</span>, <span class="at">covariates =</span> <span class="st">"x"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function TSM.&lt;locals&gt;.m at 0x7fb5008627a0&gt;, extra_keys=(), name='TSM(level=1.0)', factory_spec={'factory': 'TSM', 'args': {'level': 1.0, 'treatment': 'a', 'covariates': ['x']}})
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function TSM.&lt;locals&gt;.m at 0x7f5cafa627a0&gt;, extra_keys=(), name='TSM(level=1.0)', factory_spec={'factory': 'TSM', 'args': {'level': 1.0, 'treatment': 'a', 'covariates': ['x']}})
  signature: (z, alpha)</code></pre>
 </div>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">LocalShift</span>(<span class="at">delta =</span> <span class="fl">0.3</span>, <span class="at">threshold =</span> <span class="fl">0.7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function LocalShift.&lt;locals&gt;.m at 0x7fb5008cf100&gt;, extra_keys=(), name='LocalShift(delta=0.3, threshold=0.7)', factory_spec={'factory': 'LocalShift', 'args': {'delta': 0.3, 'threshold': 0.7, 'treatment': 'a', 'covariates': ['x']}})
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function LocalShift.&lt;locals&gt;.m at 0x7f5cafac7100&gt;, extra_keys=(), name='LocalShift(delta=0.3, threshold=0.7)', factory_spec={'factory': 'LocalShift', 'args': {'delta': 0.3, 'threshold': 0.7, 'treatment': 'a', 'covariates': ['x']}})
  signature: (z, alpha)</code></pre>
 </div>
 </div>
@@ -560,7 +560,7 @@ window.Quarto = {
 </section>
 <section id="stochastic-intervention-pre-sample-then-fit" class="level2">
 <h2 class="anchored" data-anchor-id="stochastic-intervention-pre-sample-then-fit">Stochastic intervention: pre-sample, then fit</h2>
-<p><code>StochasticIntervention</code> is the IPSI workhorse. It needs a per-row list of treatment values drawn from your intervention density. Build that column once, before fitting.</p>
+<p><code>StochasticIntervention</code> needs a list of treatment values drawn from the intervention density on each row. Build that column once before fitting.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -614,12 +614,12 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>The <code>extra_keys</code> field on the estimand declares which payload columns to pull through; in this case it’s <code>("shift_samples",)</code>. <code>RieszBooster</code> handles the wiring.</p>
+<p><code>StochasticIntervention</code> sets <code>extra_keys=("shift_samples",)</code> so <code>RieszBooster.fit(df)</code> pulls that column through to <code>m</code> along with the features.</p>
 </section>
 <section id="custom-estimands" class="level2">
 <h2 class="anchored" data-anchor-id="custom-estimands">Custom estimands</h2>
-<p>If none of the built-ins fit your functional, write <code>m(z, alpha)</code> directly and wrap it in an <code>Estimand</code>. The library traces <span class="math inline">\(m\)</span> symbolically to extract the linear-form structure.</p>
-<p>The rule: <span class="math inline">\(m\)</span> must be a <strong>finite linear combination of point evaluations of <span class="math inline">\(\alpha\)</span></strong>, built only with <code>+</code>, <code>-</code>, scalar <code>*</code>, and calls to <code>alpha(...)</code>. Anything outside that algebra (squaring, adding constants, integrals) raises immediately.</p>
+<p>To fit a functional not covered by the built-ins, write <code>m(z, alpha)</code> and wrap it in an <code>Estimand</code>. The library traces <span class="math inline">\(m\)</span> to extract the linear-form structure.</p>
+<p><span class="math inline">\(m\)</span> must be a finite linear combination of point evaluations of <span class="math inline">\(\alpha\)</span>, built with <code>+</code>, <code>-</code>, scalar <code>*</code>, and calls to <code>alpha(...)</code>. Squaring, adding constants, integrals, and other non-linear operations raise.</p>
 <div class="callout callout-style-default callout-note callout-titled" title="Python-only">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -630,7 +630,7 @@ window.Quarto = {
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Custom <code>m()</code> requires the symbolic tracer, which is currently Python-only. R users have two options: (1) use a built-in factory, or (2) define your <code>m()</code> in Python and call it from R via reticulate. See <a href="./r-interface.html">r-interface</a> for the recipe.</p>
+<p>Custom <code>m()</code> is Python-only. From R, define <code>m</code> in Python via <code>reticulate::py_run_string</code> and pass the resulting <code>Estimand</code> to <code>RieszBooster$new(estimand=...)</code>. See the <a href="./r-interface.html">R interface page</a> for the recipe.</p>
 </div>
 </div>
 <div class="cell">
@@ -649,10 +649,10 @@ window.Quarto = {
 <span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(est)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function m_weighted_contrast at 0x7fb4f1b925c0&gt;, extra_keys=(), name='WeightedContrast', factory_spec=None)</code></pre>
+<pre><code>Estimand(feature_keys=('a', 'x'), m=&lt;function m_weighted_contrast at 0x7f5c9ed9a5c0&gt;, extra_keys=(), name='WeightedContrast', factory_spec=None)</code></pre>
 </div>
 </div>
-<p>The estimand is now a first-class object you can pass to <code>RieszBooster</code>:</p>
+<p>Pass the estimand to <code>RieszBooster</code>:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">0</span>)</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({</span>
@@ -669,7 +669,7 @@ window.Quarto = {
 </div>
 <section id="what-the-tracer-rejects" class="level3">
 <h3 class="anchored" data-anchor-id="what-the-tracer-rejects">What the tracer rejects</h3>
-<p>The error messages are designed to point you at the offending operation. A few examples:</p>
+<p>The errors point at the offending operation:</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> rieszboost <span class="im">import</span> Estimand, RieszBooster, trace</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -690,12 +690,12 @@ window.Quarto = {
 <pre><code>TypeError: Cannot add a scalar to a LinearForm — m must be linear in alpha (no constant offsets).</code></pre>
 </div>
 </div>
-<p>If the operation you actually want is genuinely outside the linear-form algebra (a derivative or integral of <span class="math inline">\(\alpha\)</span>, say), you’ve left the regime the augmented-data approach can handle. The roadmap includes a slow path for general <span class="math inline">\(m\)</span> via base-learner gradient boosting; today, restate the estimand if possible (e.g.&nbsp;Monte-Carlo-sample the intervention density and use <code>StochasticIntervention</code>).</p>
+<p>For estimands with integrals or derivatives of <span class="math inline">\(\alpha\)</span> (outside the finite-linear-form algebra), Monte-Carlo-sample and use <code>StochasticIntervention</code> if applicable.</p>
 </section>
 </section>
 <section id="feature-keys-extra-keys" class="level2">
 <h2 class="anchored" data-anchor-id="feature-keys-extra-keys">Feature keys, extra keys</h2>
-<p>For reference, the <code>Estimand</code> dataclass has four fields:</p>
+<p>The <code>Estimand</code> dataclass has these fields:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Estimand:</span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    feature_keys: <span class="bu">tuple</span>[<span class="bu">str</span>, ...]      <span class="co"># columns alpha is indexed by</span></span>
@@ -704,7 +704,7 @@ window.Quarto = {
 <span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span> <span class="op">=</span> <span class="st">"custom"</span></span>
 <span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    factory_spec: <span class="bu">dict</span> <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span>   <span class="co"># set by built-in factories so the estimand</span></span>
 <span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>                                       <span class="co"># round-trips through save / load</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><code>RieszBooster</code> reads <code>feature_keys + extra_keys</code> off the estimand at fit time to construct the row dicts passed to <code>m</code>. Stick to that contract and the booster handles everything else.</p>
+<p><code>RieszBooster</code> reads <code>feature_keys</code> and <code>extra_keys</code> to assemble the row dicts passed to <code>m</code>.</p>
 
 
 </section>

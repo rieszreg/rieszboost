@@ -436,11 +436,11 @@ window.Quarto = {
    
   <ul>
   <li><a href="#setup-a-low-overlap-dataset" id="toc-setup-a-low-overlap-dataset" class="nav-link active" data-scroll-target="#setup-a-low-overlap-dataset">Setup: a low-overlap dataset</a></li>
-  <li><a href="#a-deliberately-greedy-fit" id="toc-a-deliberately-greedy-fit" class="nav-link" data-scroll-target="#a-deliberately-greedy-fit">A deliberately greedy fit</a></li>
+  <li><a href="#a-greedy-fit" id="toc-a-greedy-fit" class="nav-link" data-scroll-target="#a-greedy-fit">A greedy fit</a></li>
   <li><a href="#reading-the-report" id="toc-reading-the-report" class="nav-link" data-scroll-target="#reading-the-report">Reading the report</a></li>
   <li><a href="#a-tuned-fit" id="toc-a-tuned-fit" class="nav-link" data-scroll-target="#a-tuned-fit">A tuned fit</a></li>
   <li><a href="#tuning-recipe" id="toc-tuning-recipe" class="nav-link" data-scroll-target="#tuning-recipe">Tuning recipe</a></li>
-  <li><a href="#a-note-on-what-.diagnose-is-not" id="toc-a-note-on-what-.diagnose-is-not" class="nav-link" data-scroll-target="#a-note-on-what-.diagnose-is-not">A note on what <code>.diagnose()</code> is <em>not</em></a></li>
+  <li><a href="#what-.diagnose-does-not-do" id="toc-what-.diagnose-does-not-do" class="nav-link" data-scroll-target="#what-.diagnose-does-not-do">What <code>.diagnose()</code> does not do</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/alejandroschuler/rieszboost/edit/main/diagnostics-and-tuning.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/alejandroschuler/rieszboost/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -467,11 +467,11 @@ window.Quarto = {
 </header>
 
 
-<p>Tuning <span class="math inline">\(\hat\alpha\)</span> is different from tuning a regression model. The Riesz loss has no held-out reference (you don’t observe <span class="math inline">\(\alpha_0\)</span> on real data), so the validation curve from <code>early_stopping_rounds</code> is <em>the</em> signal during training. After the fit, <code>.diagnose()</code> surfaces failure modes — extreme tail values, near-positivity violations, single-point extrapolation — that often matter more for downstream variance than the bulk fit quality.</p>
-<p>This page walks through <code>.diagnose()</code> on a deliberately under-tuned booster (so the warnings actually fire) and then maps each warning to the hyperparameter that fixes it.</p>
+<p>You don’t observe <span class="math inline">\(\alpha_0\)</span> on real data, so the validation curve from <code>early_stopping_rounds</code> is the only training-time signal. After fitting, <code>.diagnose()</code> reports magnitude statistics and warnings about extreme tail values, near-positivity violations, and single-point extrapolation. Those warnings often matter more for downstream variance than the bulk fit quality.</p>
+<p>This page walks through <code>.diagnose()</code> on an under-tuned booster (so the warnings fire) and maps each warning to the hyperparameter that fixes it.</p>
 <section id="setup-a-low-overlap-dataset" class="level2">
 <h2 class="anchored" data-anchor-id="setup-a-low-overlap-dataset">Setup: a low-overlap dataset</h2>
-<p>We push the propensity close to 0 in part of the covariate space — exactly the regime where naive inverse-propensity weighting falls apart and where the booster’s tuning matters most.</p>
+<p>We push the propensity close to 0 in part of the covariate space. This is where naive inverse-propensity weighting falls apart.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -483,11 +483,10 @@ window.Quarto = {
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">0</span>)</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> <span class="dv">2000</span></span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> rng.uniform(<span class="dv">0</span>, <span class="dv">1</span>, n)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Aggressive logit so π(x) ≈ 0 for small x</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>pi <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> np.exp(<span class="op">-</span>(<span class="fl">8.0</span> <span class="op">*</span> x <span class="op">-</span> <span class="fl">5.0</span>)))</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> rng.binomial(<span class="dv">1</span>, pi)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({<span class="st">"a"</span>: a.astype(<span class="bu">float</span>), <span class="st">"x"</span>: x})</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"min π(x) = </span><span class="sc">{</span>pi<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">, fraction with π(x) &lt; 0.05 = </span><span class="sc">{</span>(pi <span class="op">&lt;</span> <span class="fl">0.05</span>)<span class="sc">.</span>mean()<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>pi <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> np.exp(<span class="op">-</span>(<span class="fl">8.0</span> <span class="op">*</span> x <span class="op">-</span> <span class="fl">5.0</span>)))</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>a <span class="op">=</span> rng.binomial(<span class="dv">1</span>, pi)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.DataFrame({<span class="st">"a"</span>: a.astype(<span class="bu">float</span>), <span class="st">"x"</span>: x})</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"min π(x) = </span><span class="sc">{</span>pi<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">, fraction with π(x) &lt; 0.05 = </span><span class="sc">{</span>(pi <span class="op">&lt;</span> <span class="fl">0.05</span>)<span class="sc">.</span>mean()<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>min π(x) = 0.007, fraction with π(x) &lt; 0.05 = 0.26</code></pre>
 </div>
@@ -511,9 +510,9 @@ window.Quarto = {
 </div>
 </div>
 </section>
-<section id="a-deliberately-greedy-fit" class="level2">
-<h2 class="anchored" data-anchor-id="a-deliberately-greedy-fit">A deliberately greedy fit</h2>
-<p>Deep trees, no regularization, no early stopping — almost guaranteed to extrapolate badly in the low-π region.</p>
+<section id="a-greedy-fit" class="level2">
+<h2 class="anchored" data-anchor-id="a-greedy-fit">A greedy fit</h2>
+<p>Deep trees, no regularization, no early stopping. This will extrapolate badly in the low-π region.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -522,9 +521,9 @@ window.Quarto = {
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>greedy <span class="op">=</span> RieszBooster(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    estimand<span class="op">=</span>ATE(),</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    n_estimators<span class="op">=</span><span class="dv">300</span>,</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span><span class="fl">0.3</span>,    <span class="co"># too high</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    max_depth<span class="op">=</span><span class="dv">8</span>,          <span class="co"># too deep</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    reg_lambda<span class="op">=</span><span class="fl">0.0</span>,       <span class="co"># no L2</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span><span class="fl">0.3</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    max_depth<span class="op">=</span><span class="dv">8</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    reg_lambda<span class="op">=</span><span class="fl">0.0</span>,</span>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>).fit(df)</span>
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(greedy.diagnose(df).summary())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
@@ -575,17 +574,17 @@ window.Quarto = {
 <section id="reading-the-report" class="level2">
 <h2 class="anchored" data-anchor-id="reading-the-report">Reading the report</h2>
 <p>The summary has three parts.</p>
-<p><strong>Magnitude block.</strong> RMS, mean, min/max, and <code>|alpha|</code> quantiles. The 99th percentile and the max are the load-bearing numbers. Healthy fits typically have max <span class="math inline">\(\le\)</span> a few times the 99th percentile. Max far above the 99th percentile is the signature of a <strong>single-point extrapolation outlier</strong> — one leaf in the boosted forest is far from any training data and the linear extrapolation has run away.</p>
-<p><strong>Extreme rows.</strong> Rows where <span class="math inline">\(|\hat\alpha|\)</span> exceeds <code>extreme_threshold</code> (default 30). The downstream IF estimator’s variance is dominated by the largest few weights, so even 1% of rows over the threshold is enough to inflate confidence intervals.</p>
-<p><strong>Warnings block.</strong> Two automatic checks fire when <code>.diagnose()</code> thinks something is wrong:</p>
+<p><strong>Magnitude block.</strong> RMS, mean, min/max, and <code>|alpha|</code> quantiles. The 99th percentile and the max are the load-bearing numbers. Healthy fits have max no more than a few times the 99th percentile. Max far above the 99th percentile signals a single-point extrapolation outlier: one leaf is far from any training data and its prediction has run away.</p>
+<p><strong>Extreme rows.</strong> Rows where <span class="math inline">\(|\hat\alpha|\)</span> exceeds <code>extreme_threshold</code> (default 30). Downstream IF estimator variance is dominated by the largest few weights, so even 1% of rows over the threshold inflates confidence intervals.</p>
+<p><strong>Warnings.</strong> Two automatic checks:</p>
 <ol type="1">
-<li><em>“X% of rows have <span class="math inline">\(|\hat\alpha| &gt;\)</span> threshold — possible near-positivity violation.”</em> Either the data has genuine near-positivity (in which case truncate <code>extreme_threshold</code> lower and report the loss-of-overlap honestly) or the booster is over-fitting (tune as below).</li>
-<li><em>“max <span class="math inline">\(|\hat\alpha|\)</span> is &gt;10× the 99th percentile — likely a single extrapolation outlier.”</em> The booster found a leaf with no nearby training data and extrapolated. Tighten trees, increase <code>reg_lambda</code>, or stop earlier.</li>
+<li><em>“X% of rows have <span class="math inline">\(|\hat\alpha| &gt;\)</span> threshold — possible near-positivity violation.”</em> Either the data has genuine near-positivity (truncate <code>extreme_threshold</code> and report the loss of overlap), or the booster is over-fitting (tune as below).</li>
+<li><em>“max <span class="math inline">\(|\hat\alpha|\)</span> is &gt;10× the 99th percentile — likely a single extrapolation outlier.”</em> The booster found a leaf with no nearby training data. Tighten trees, increase <code>reg_lambda</code>, or stop earlier.</li>
 </ol>
 </section>
 <section id="a-tuned-fit" class="level2">
 <h2 class="anchored" data-anchor-id="a-tuned-fit">A tuned fit</h2>
-<p>Same data, sane hyperparameters, with early stopping on a held-out split.</p>
+<p>Same data with sensible hyperparameters and early stopping.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -659,7 +658,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<p>The greedy fit’s max <span class="math inline">\(|\hat\alpha|\)</span> shrinks by an order of magnitude, the extreme-row count drops, and the warnings clear (or at least become honest signals about the data rather than the fit).</p>
+<p>The max <span class="math inline">\(|\hat\alpha|\)</span> shrinks by an order of magnitude, the extreme-row count drops, and the warnings clear.</p>
 </section>
 <section id="tuning-recipe" class="level2">
 <h2 class="anchored" data-anchor-id="tuning-recipe">Tuning recipe</h2>
@@ -675,49 +674,49 @@ window.Quarto = {
 <th>Knob</th>
 <th>Default</th>
 <th>When to change</th>
-<th>Why</th>
+<th>Effect</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td><code>max_depth</code></td>
 <td>4</td>
-<td>Drop to 2–3 if you see extrapolation outliers</td>
+<td>Drop to 2–3 for extrapolation outliers</td>
 <td>Shallow trees can’t carve out a high-magnitude leaf for a single point.</td>
 </tr>
 <tr class="even">
 <td><code>learning_rate</code></td>
 <td>0.05</td>
 <td>Drop to 0.02 for harder problems</td>
-<td>Smaller updates mean each tree contributes less; the ensemble has more trees to recover. Pair with higher <code>n_estimators</code>.</td>
+<td>Smaller updates per tree; pair with higher <code>n_estimators</code>.</td>
 </tr>
 <tr class="odd">
 <td><code>n_estimators</code> + <code>early_stopping_rounds</code></td>
-<td>200, None</td>
-<td>Always: set <code>n_estimators</code> generously (1000-2000), <code>early_stopping_rounds=20</code></td>
-<td>The validation split picks the right size for you. The default of 200 is for unit tests, not real fits.</td>
+<td>200, <code>None</code></td>
+<td>Set <code>n_estimators=1000-2000</code> and <code>early_stopping_rounds=20</code></td>
+<td>The validation split picks the iteration count.</td>
 </tr>
 <tr class="even">
 <td><code>validation_fraction</code></td>
 <td>0.0</td>
-<td>0.2 whenever you set <code>early_stopping_rounds</code></td>
-<td>Internal split for early stopping. (Or pass <code>eval_set=</code> explicitly.)</td>
+<td>Set to 0.2 with <code>early_stopping_rounds</code></td>
+<td>Internal split for early stopping. Alternative: pass <code>eval_set=</code> explicitly.</td>
 </tr>
 <tr class="odd">
 <td><code>reg_lambda</code></td>
 <td>1.0</td>
 <td>Bump to 5–10 for low-overlap data</td>
-<td>xgboost L2 on leaf weights — directly damps the magnitude of any single leaf.</td>
+<td>xgboost L2 on leaf weights; damps the magnitude of any single leaf.</td>
 </tr>
 <tr class="even">
 <td><code>subsample</code></td>
 <td>1.0</td>
 <td>Try 0.5–0.8 with very large <span class="math inline">\(n\)</span></td>
-<td>Stochastic boosting; sometimes helps, often doesn’t matter for tabular Riesz problems.</td>
+<td>Stochastic boosting.</td>
 </tr>
 </tbody>
 </table>
-<p>For the backend itself, the most consequential knobs are exposed on <code>XGBoostBackend</code>:</p>
+<p><code>XGBoostBackend</code> exposes two more knobs:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 33%">
@@ -726,7 +725,7 @@ window.Quarto = {
 </colgroup>
 <thead>
 <tr class="header">
-<th>Knob (on <code>XGBoostBackend(...)</code>)</th>
+<th>Knob</th>
 <th>Default</th>
 <th>When to change</th>
 </tr>
@@ -735,20 +734,20 @@ window.Quarto = {
 <tr class="odd">
 <td><code>gradient_only</code></td>
 <td><code>False</code></td>
-<td><code>True</code> to match Lee-Schuler Algorithm 2 / Friedman 2001 exactly. Empirically <em>worse</em> than the default at matched hyperparameters; reach for it only when reproducing the reference paper.</td>
+<td>Set <code>True</code> to reproduce Lee-Schuler Algorithm 2 / Friedman 2001 exactly.</td>
 </tr>
 <tr class="even">
 <td><code>hessian_floor</code></td>
 <td><code>2.0</code></td>
-<td>Almost never. Floors the per-row Hessian on counterfactual rows so leaf-weight Newton steps stay stable. The default matches the natural Hessian of original-data rows; lower it only with reason.</td>
+<td>Lower bound on the per-row Hessian. The default matches the natural Hessian of original-data rows.</td>
 </tr>
 </tbody>
 </table>
-<p>See <a href="./backends-and-losses.html">backends and losses</a> for the full backend story.</p>
+<p>See <a href="./backends-and-losses.html">backends and losses</a> for the backend protocol.</p>
 </section>
-<section id="a-note-on-what-.diagnose-is-not" class="level2">
-<h2 class="anchored" data-anchor-id="a-note-on-what-.diagnose-is-not">A note on what <code>.diagnose()</code> is <em>not</em></h2>
-<p>It does not estimate the closed-form <span class="math inline">\(\alpha_0\)</span> to compare against — there isn’t one in general. It does not decide whether your sample size is enough. It is a sanity check on the fitted object and a smoke alarm for two specific failure modes (positivity, outlier extrapolation). For the actual quality of the fit, the held-out Riesz loss (<code>best_score_</code>) is the number to track during tuning, and the downstream estimator’s bootstrap CI is the number to report.</p>
+<section id="what-.diagnose-does-not-do" class="level2">
+<h2 class="anchored" data-anchor-id="what-.diagnose-does-not-do">What <code>.diagnose()</code> does not do</h2>
+<p>It does not estimate <span class="math inline">\(\alpha_0\)</span> for comparison; that closed form is generally unavailable. It does not assess sample size. It checks magnitude and the two failure modes above. For fit quality, track the held-out Riesz loss (<code>best_score_</code>). For downstream confidence intervals, use the bootstrap on the plug-in estimator.</p>
 
 
 </section>

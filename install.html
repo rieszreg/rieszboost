@@ -440,14 +440,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="python" class="level2">
 <h2 class="anchored" data-anchor-id="python">Python</h2>
-<p>The Python package is the source of truth — install it first whether you plan to use Python or R.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/alejandroschuler/rieszboost.git</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> rieszboost</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> venv .venv</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">.venv/bin/pip</span> install <span class="at">-e</span> python/</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><code>xgboost</code> requires OpenMP. On macOS:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install libomp</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Linux runners (including GitHub Actions ubuntu-latest) ship <code>libgomp1</code> preinstalled, so no extra step is needed there.</p>
+<p>Linux distributions (and GitHub Actions ubuntu-latest) ship <code>libgomp1</code>; no extra step is needed.</p>
 <section id="verify" class="level3">
 <h3 class="anchored" data-anchor-id="verify">Verify</h3>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
@@ -477,32 +476,19 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="r-wrapper-optional" class="level2">
 <h2 class="anchored" data-anchor-id="r-wrapper-optional">R wrapper (optional)</h2>
-<p>The R package is a thin R6 mirror around the Python implementation via <a href="https://rstudio.github.io/reticulate/">reticulate</a>. It does not require a separate install of any algorithmic dependency — everything runs in the Python venv.</p>
-<p>Three steps the first time you use it:</p>
+<p>The R package is an R6 wrapper that calls the Python implementation through <a href="https://rstudio.github.io/reticulate/">reticulate</a>. It does not require any separate algorithmic dependency.</p>
+<p>First-time setup:</p>
 <ol type="1">
-<li><p>Install the R package dependencies (<code>reticulate</code>, <code>R6</code>):</p>
+<li><p>Install the R package dependencies:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"reticulate"</span>, <span class="st">"R6"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
-<li><p>Either install the R wrapper as a package or dev-load it from the source tree. For this guide we dev-load:</p>
+<li><p>Load the R wrapper. For this guide we dev-load it from the source tree:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>pkgload<span class="sc">::</span><span class="fu">load_all</span>(<span class="st">"r/rieszboost"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
-<li><p>Point reticulate at the Python venv where you installed <code>rieszboost</code>:</p>
+<li><p>Point reticulate at the Python venv:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">use_python_rieszboost</span>(<span class="st">".venv/bin/python"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>You can also set the env var <code>RETICULATE_PYTHON</code> before R starts:</p>
+<p>Or set the environment variable before R starts:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode sh code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">RETICULATE_PYTHON</span><span class="op">=</span>/path/to/rieszboost/.venv/bin/python</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 </ol>
-<p>After that, every R example in this guide runs verbatim.</p>
-<div class="callout callout-style-default callout-note callout-titled" title="What R covers">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>What R covers
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>The R wrapper exports every public Python class except the symbolic tracer for <strong>custom</strong> <code>m()</code> (see <a href="./estimands.html">estimands</a> and <a href="./r-interface.html">r-interface</a>). All built-in estimands, both losses, both backends, and the entire <code>RieszBooster</code> API are first-class in R.</p>
-</div>
-</div>
+<p>The R API exposes every built-in estimand, both losses, both backends, and the full <code>RieszBooster</code> interface. The symbolic tracer for custom <code>m()</code> is Python-only; see <a href="./r-interface.html">r-interface</a> for how to call it from R.</p>
 </section>
 <section id="tests" class="level2">
 <h2 class="anchored" data-anchor-id="tests">Tests</h2>

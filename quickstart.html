@@ -437,10 +437,10 @@ window.Quarto = {
   <ul>
   <li><a href="#simulate" id="toc-simulate" class="nav-link active" data-scroll-target="#simulate">Simulate</a></li>
   <li><a href="#fit" id="toc-fit" class="nav-link" data-scroll-target="#fit">Fit</a></li>
-  <li><a href="#predict-and-compare-to-the-closed-form-representer" id="toc-predict-and-compare-to-the-closed-form-representer" class="nav-link" data-scroll-target="#predict-and-compare-to-the-closed-form-representer">Predict and compare to the closed-form representer</a></li>
+  <li><a href="#predict-and-compare-to-the-closed-form" id="toc-predict-and-compare-to-the-closed-form" class="nav-link" data-scroll-target="#predict-and-compare-to-the-closed-form">Predict and compare to the closed form</a></li>
   <li><a href="#visual-sanity-check" id="toc-visual-sanity-check" class="nav-link" data-scroll-target="#visual-sanity-check">Visual sanity check</a></li>
   <li><a href="#diagnostics" id="toc-diagnostics" class="nav-link" data-scroll-target="#diagnostics">Diagnostics</a></li>
-  <li><a href="#where-next" id="toc-where-next" class="nav-link" data-scroll-target="#where-next">Where next</a></li>
+  <li><a href="#next" id="toc-next" class="nav-link" data-scroll-target="#next">Next</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/alejandroschuler/rieszboost/edit/main/quickstart.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/alejandroschuler/rieszboost/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -467,10 +467,10 @@ window.Quarto = {
 </header>
 
 
-<p>This page fits a Riesz representer for the average treatment effect on a synthetic dataset, end to end. Pick the language tab you want — your choice persists across the whole site.</p>
+<p>This page fits a Riesz representer for the average treatment effect on a synthetic dataset. Pick the language tab on any code block; your choice persists across the site.</p>
 <section id="simulate" class="level2">
 <h2 class="anchored" data-anchor-id="simulate">Simulate</h2>
-<p>A binary treatment with covariate-driven assignment and known propensity <span class="math inline">\(\pi(x)\)</span>. We will recover <span class="math inline">\(\alpha_0(a, x) = a/\pi(x) - (1-a)/(1-\pi(x))\)</span> without ever estimating <span class="math inline">\(\pi\)</span>.</p>
+<p>Binary treatment with known propensity <span class="math inline">\(\pi(x)\)</span>. We will recover <span class="math inline">\(\alpha_0(a, x) = a/\pi(x) - (1-a)/(1-\pi(x))\)</span> without estimating <span class="math inline">\(\pi\)</span>.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -522,7 +522,7 @@ window.Quarto = {
 </section>
 <section id="fit" class="level2">
 <h2 class="anchored" data-anchor-id="fit">Fit</h2>
-<p><code>RieszBooster</code> is an sklearn-style estimator: configure on the constructor (the estimand owns its input schema, so no <code>feature_keys=</code> repeated on every call), then <code>.fit(df)</code>. Early stopping uses an internal validation split sized by <code>validation_fraction</code>.</p>
+<p>Configure the booster on the constructor, then call <code>.fit(df)</code>. Early stopping uses an internal validation split sized by <code>validation_fraction</code>.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -1090,7 +1090,7 @@ a.param-doc-link::before {
 }
 </style><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>RieszBooster(early_stopping_rounds=20,
              estimand=Estimand(feature_keys=('a', 'x'),
-                               m=&lt;function ATE.&lt;locals&gt;.m at 0x13a9e67a0&gt;,
+                               m=&lt;function ATE.&lt;locals&gt;.m at 0x7f735494a0c0&gt;,
                                extra_keys=(),
                                name='ATE',
                                factory_spec={'args': {'covariates': ['x'],
@@ -1316,9 +1316,9 @@ forceTheme('sk-container-id-1');</script>
 </div>
 </div>
 </section>
-<section id="predict-and-compare-to-the-closed-form-representer" class="level2">
-<h2 class="anchored" data-anchor-id="predict-and-compare-to-the-closed-form-representer">Predict and compare to the closed-form representer</h2>
-<p>This is a synthetic example, so we have access to <span class="math inline">\(\alpha_0\)</span> and can score the fit directly.</p>
+<section id="predict-and-compare-to-the-closed-form" class="level2">
+<h2 class="anchored" data-anchor-id="predict-and-compare-to-the-closed-form">Predict and compare to the closed form</h2>
+<p>We know <span class="math inline">\(\alpha_0\)</span> here, so we can score the fit directly.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
@@ -1362,17 +1362,14 @@ forceTheme('sk-container-id-1');</script>
 <div class="tab-content" data-group="lang">
 <div id="tabset-4-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-4-1-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Matplotlib is building the font cache; this may take a moment.</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots()</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>ax.scatter(true_alpha, alpha_hat, s<span class="op">=</span><span class="dv">4</span>, alpha<span class="op">=</span><span class="fl">0.4</span>)</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>lim <span class="op">=</span> <span class="bu">max</span>(<span class="bu">abs</span>(true_alpha).<span class="bu">max</span>(), <span class="bu">abs</span>(alpha_hat).<span class="bu">max</span>())</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>ax.plot([<span class="op">-</span>lim, lim], [<span class="op">-</span>lim, lim], <span class="st">"k--"</span>, lw<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="vs">r"</span><span class="dv">$</span><span class="ch">\a</span><span class="vs">lpha_0</span><span class="dv">$</span><span class="vs"> </span><span class="kw">(</span><span class="vs">closed-form</span><span class="kw">)</span><span class="vs">"</span>)</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="vs">r"</span><span class="dv">$</span><span class="er">\</span><span class="vs">hat</span><span class="ch">\a</span><span class="vs">lpha</span><span class="dv">$</span><span class="vs"> </span><span class="kw">(</span><span class="vs">rieszboost</span><span class="kw">)</span><span class="vs">"</span>)</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots()</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>ax.scatter(true_alpha, alpha_hat, s<span class="op">=</span><span class="dv">4</span>, alpha<span class="op">=</span><span class="fl">0.4</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>lim <span class="op">=</span> <span class="bu">max</span>(<span class="bu">abs</span>(true_alpha).<span class="bu">max</span>(), <span class="bu">abs</span>(alpha_hat).<span class="bu">max</span>())</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>ax.plot([<span class="op">-</span>lim, lim], [<span class="op">-</span>lim, lim], <span class="st">"k--"</span>, lw<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="vs">r"</span><span class="dv">$</span><span class="ch">\a</span><span class="vs">lpha_0</span><span class="dv">$</span><span class="vs"> </span><span class="kw">(</span><span class="vs">closed-form</span><span class="kw">)</span><span class="vs">"</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="vs">r"</span><span class="dv">$</span><span class="er">\</span><span class="vs">hat</span><span class="ch">\a</span><span class="vs">lpha</span><span class="dv">$</span><span class="vs"> </span><span class="kw">(</span><span class="vs">rieszboost</span><span class="kw">)</span><span class="vs">"</span>)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -1385,12 +1382,12 @@ forceTheme('sk-container-id-1');</script>
 </div>
 <div id="tabset-4-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-4-2-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>lim <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">abs</span>(<span class="fu">c</span>(true_alpha, alpha_hat)))</span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(true_alpha, alpha_hat, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.4</span>, <span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">"black"</span>, <span class="fl">0.4</span>),</span>
-<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlim =</span> <span class="fu">c</span>(<span class="sc">-</span>lim, lim), <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span>lim, lim),</span>
-<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="fu">expression</span>(alpha[<span class="dv">0</span>]<span class="sc">~</span><span class="st">"(closed-form)"</span>),</span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(<span class="fu">hat</span>(alpha)<span class="sc">~</span><span class="st">"(rieszboost)"</span>))</span>
-<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>lim <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">abs</span>(<span class="fu">c</span>(true_alpha, alpha_hat)))</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(true_alpha, alpha_hat, <span class="at">pch =</span> <span class="dv">16</span>, <span class="at">cex =</span> <span class="fl">0.4</span>, <span class="at">col =</span> <span class="fu">adjustcolor</span>(<span class="st">"black"</span>, <span class="fl">0.4</span>),</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlim =</span> <span class="fu">c</span>(<span class="sc">-</span>lim, lim), <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span>lim, lim),</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="fu">expression</span>(alpha[<span class="dv">0</span>]<span class="sc">~</span><span class="st">"(closed-form)"</span>),</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>     <span class="at">ylab =</span> <span class="fu">expression</span>(<span class="fu">hat</span>(alpha)<span class="sc">~</span><span class="st">"(rieszboost)"</span>))</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -1406,13 +1403,13 @@ forceTheme('sk-container-id-1');</script>
 </section>
 <section id="diagnostics" class="level2">
 <h2 class="anchored" data-anchor-id="diagnostics">Diagnostics</h2>
-<p>Always inspect the fit before using <span class="math inline">\(\hat\alpha\)</span> downstream. <code>.diagnose()</code> reports the magnitude distribution, near-positivity warnings, and the held-out Riesz loss.</p>
+<p>Inspect the fit before using <span class="math inline">\(\hat\alpha\)</span> downstream. <code>.diagnose()</code> reports the magnitude distribution, positivity warnings, and the held-out Riesz loss.</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset" data-group="lang">
 <ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-5-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-1" role="tab" aria-controls="tabset-5-1" aria-selected="true" href="">Python</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-5-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-5-2" role="tab" aria-controls="tabset-5-2" aria-selected="false" href="">R</a></li></ul>
 <div class="tab-content" data-group="lang">
 <div id="tabset-5-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-5-1-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(booster.diagnose(df).summary())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(booster.diagnose(df).summary())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Riesz representer diagnostics (n=4000):
   RMS magnitude   : 2.4012
@@ -1430,7 +1427,7 @@ forceTheme('sk-container-id-1');</script>
 </div>
 <div id="tabset-5-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-5-2-tab">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(booster<span class="sc">$</span><span class="fu">diagnose</span>(df)<span class="sc">$</span>summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(booster<span class="sc">$</span><span class="fu">diagnose</span>(df)<span class="sc">$</span>summary)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Riesz representer diagnostics (n=4000):
   RMS magnitude   : 2.1413
@@ -1449,12 +1446,12 @@ forceTheme('sk-container-id-1');</script>
 </div>
 </div>
 </section>
-<section id="where-next" class="level2">
-<h2 class="anchored" data-anchor-id="where-next">Where next</h2>
+<section id="next" class="level2">
+<h2 class="anchored" data-anchor-id="next">Next</h2>
 <ul>
-<li>For inference (TMLE / one-step / DML), out-of-fold predictions via <a href="./sklearn-integration.html">scikit-learn integration</a>.</li>
-<li>Built-ins beyond ATE and how to write your own: <a href="./estimands.html">estimands</a>.</li>
-<li>Reading <code>.diagnose()</code> carefully + tuning recipes: <a href="./diagnostics-and-tuning.html">diagnostics and tuning</a>.</li>
+<li><a href="./sklearn-integration.html">scikit-learn integration</a> for out-of-fold predictions used in TMLE / one-step / DML.</li>
+<li><a href="./estimands.html">Estimands</a> for the other built-ins and custom <span class="math inline">\(m\)</span>.</li>
+<li><a href="./diagnostics-and-tuning.html">Diagnostics and tuning</a> for reading <code>.diagnose()</code> and choosing hyperparameters.</li>
 </ul>
 
 

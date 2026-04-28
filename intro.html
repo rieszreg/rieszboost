@@ -402,10 +402,10 @@ window.Quarto = {
   <ul>
   <li><a href="#the-setup" id="toc-the-setup" class="nav-link active" data-scroll-target="#the-setup">The setup</a></li>
   <li><a href="#what-is-alpha_0" id="toc-what-is-alpha_0" class="nav-link" data-scroll-target="#what-is-alpha_0">What is <span class="math inline">\(\alpha_0\)</span>?</a></li>
-  <li><a href="#why-not-just-estimate-the-propensity" id="toc-why-not-just-estimate-the-propensity" class="nav-link" data-scroll-target="#why-not-just-estimate-the-propensity">Why not just estimate the propensity?</a></li>
-  <li><a href="#riesz-regression-estimate-alpha_0-directly" id="toc-riesz-regression-estimate-alpha_0-directly" class="nav-link" data-scroll-target="#riesz-regression-estimate-alpha_0-directly">Riesz regression: estimate <span class="math inline">\(\alpha_0\)</span> directly</a></li>
+  <li><a href="#why-not-estimate-the-propensity-directly" id="toc-why-not-estimate-the-propensity-directly" class="nav-link" data-scroll-target="#why-not-estimate-the-propensity-directly">Why not estimate the propensity directly?</a></li>
+  <li><a href="#riesz-regression" id="toc-riesz-regression" class="nav-link" data-scroll-target="#riesz-regression">Riesz regression</a></li>
   <li><a href="#why-boost-it" id="toc-why-boost-it" class="nav-link" data-scroll-target="#why-boost-it">Why boost it?</a></li>
-  <li><a href="#what-rieszboost-gives-you" id="toc-what-rieszboost-gives-you" class="nav-link" data-scroll-target="#what-rieszboost-gives-you">What <code>rieszboost</code> gives you</a></li>
+  <li><a href="#what-rieszboost-provides" id="toc-what-rieszboost-provides" class="nav-link" data-scroll-target="#what-rieszboost-provides">What <code>rieszboost</code> provides</a></li>
   </ul>
 <div class="toc-actions"><ul><li><a href="https://github.com/alejandroschuler/rieszboost/edit/main/intro.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/alejandroschuler/rieszboost/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
     </div>
@@ -434,11 +434,11 @@ window.Quarto = {
 
 <section id="the-setup" class="level2">
 <h2 class="anchored" data-anchor-id="the-setup">The setup</h2>
-<p>In semiparametric inference, you often want to estimate a <strong>functional</strong> of an unknown nuisance — something like</p>
+<p>In semiparametric inference, you often want to estimate a functional of an unknown nuisance:</p>
 <p><span class="math display">\[
 \theta(P) \;=\; \mathbb{E}\!\left[m(Z, g_0)\right]
 \]</span></p>
-<p>where <span class="math inline">\(g_0(z) = \mathbb{E}[Y \mid Z = z]\)</span> is an outcome regression and <span class="math inline">\(m(z, g)\)</span> is a <em>linear functional</em> of <span class="math inline">\(g\)</span>. Concrete examples:</p>
+<p>where <span class="math inline">\(g_0(z) = \mathbb{E}[Y \mid Z = z]\)</span> is an outcome regression and <span class="math inline">\(m(z, g)\)</span> is a linear functional of <span class="math inline">\(g\)</span>. Examples:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 50%">
@@ -469,58 +469,57 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<p>A naive plug-in estimator <span class="math inline">\(\hat\theta = n^{-1} \sum_i m(Z_i, \hat g)\)</span> is biased because <span class="math inline">\(\hat g\)</span> is itself estimated. Modern semiparametric estimators (one-step, TMLE, DML) correct for that bias by adding a term involving the <strong>Riesz representer</strong> <span class="math inline">\(\alpha_0\)</span> of <span class="math inline">\(m\)</span>:</p>
+<p>The plug-in estimator <span class="math inline">\(\hat\theta = n^{-1} \sum_i m(Z_i, \hat g)\)</span> is biased because <span class="math inline">\(\hat g\)</span> is itself estimated. Modern semiparametric estimators (one-step, TMLE, DML) correct that bias by adding a term involving the Riesz representer <span class="math inline">\(\alpha_0\)</span> of <span class="math inline">\(m\)</span>:</p>
 <p><span class="math display">\[
 \hat\theta_{\text{corrected}} \;=\; n^{-1} \sum_i \Big[\,m(Z_i, \hat g) + \alpha_0(Z_i)\,\big(Y_i - \hat g(Z_i)\big)\,\Big].
 \]</span></p>
 </section>
 <section id="what-is-alpha_0" class="level2">
 <h2 class="anchored" data-anchor-id="what-is-alpha_0">What is <span class="math inline">\(\alpha_0\)</span>?</h2>
-<p>The Riesz representation theorem says: because <span class="math inline">\(m(z, \cdot)\)</span> is linear in its second argument and bounded, there exists a function <span class="math inline">\(\alpha_0(z)\)</span> such that</p>
+<p>By the Riesz representation theorem, since <span class="math inline">\(m(z, \cdot)\)</span> is bounded and linear in <span class="math inline">\(g\)</span>, there exists a function <span class="math inline">\(\alpha_0(z)\)</span> satisfying</p>
 <p><span class="math display">\[
 \mathbb{E}[m(Z, g)] \;=\; \mathbb{E}\!\left[\alpha_0(Z) \cdot g(Z)\right]
 \quad \text{for all } g.
 \]</span></p>
-<p>For ATE this is the inverse-propensity weight <span class="math inline">\(\alpha_0(a, x) = a/\pi(x) - (1-a)/(1-\pi(x))\)</span>. For TSM it’s the density ratio <span class="math inline">\(\mathbb{1}\{a = a^\star\}/\pi(a^\star \mid x)\)</span>. In general <span class="math inline">\(\alpha_0\)</span> has a closed form involving the <em>generalized propensity score</em> — and that closed form is <em>exactly what we want to avoid computing</em>.</p>
+<p>For ATE, <span class="math inline">\(\alpha_0(a, x) = a/\pi(x) - (1-a)/(1-\pi(x))\)</span> is the inverse-propensity weight. For TSM, <span class="math inline">\(\alpha_0\)</span> is the density ratio <span class="math inline">\(\mathbb{1}\{a = a^\star\}/\pi(a^\star \mid x)\)</span>. In general, <span class="math inline">\(\alpha_0\)</span> has a closed form involving the generalized propensity score.</p>
 </section>
-<section id="why-not-just-estimate-the-propensity" class="level2">
-<h2 class="anchored" data-anchor-id="why-not-just-estimate-the-propensity">Why not just estimate the propensity?</h2>
-<p>For ATE: estimate <span class="math inline">\(\hat\pi(x)\)</span>, plug in, get <span class="math inline">\(\hat\alpha(a, x) = a/\hat\pi(x) - (1-a)/(1-\hat\pi(x))\)</span>. Done.</p>
-<p>This works fine when <span class="math inline">\(\hat\pi\)</span> is well-behaved. It breaks when:</p>
+<section id="why-not-estimate-the-propensity-directly" class="level2">
+<h2 class="anchored" data-anchor-id="why-not-estimate-the-propensity-directly">Why not estimate the propensity directly?</h2>
+<p>For ATE you can: estimate <span class="math inline">\(\hat\pi(x)\)</span>, plug in, get <span class="math inline">\(\hat\alpha(a, x) = a/\hat\pi(x) - (1-a)/(1-\hat\pi(x))\)</span>.</p>
+<p>This breaks down when:</p>
 <ol type="1">
-<li><p><strong>Positivity is borderline.</strong> If <span class="math inline">\(\hat\pi(x)\)</span> approaches 0 or 1 anywhere in the data, <span class="math inline">\(\hat\alpha\)</span> explodes. Truncation patches the symptom but introduces its own bias and is hard to defend.</p></li>
-<li><p><strong>The estimand is non-standard.</strong> For continuous shifts, stochastic interventions, longitudinal LMTPs, the closed-form <span class="math inline">\(\alpha_0\)</span> involves derivatives of the conditional density of <span class="math inline">\(A\)</span> given <span class="math inline">\(X\)</span> — quantities that are themselves harder to estimate than <span class="math inline">\(\alpha_0\)</span> itself. By the time you’ve written down the estimator, you’ve solved a harder problem than you needed to.</p></li>
-<li><p><strong>Misspecification compounds.</strong> Plug-in bias in <span class="math inline">\(\hat\pi\)</span> propagates nonlinearly through the ratio <span class="math inline">\(1/\hat\pi\)</span>.</p></li>
+<li><p><strong>Positivity is borderline.</strong> If <span class="math inline">\(\hat\pi(x)\)</span> approaches 0 or 1, <span class="math inline">\(\hat\alpha\)</span> explodes. Truncation patches the symptom but introduces its own bias.</p></li>
+<li><p><strong>The estimand is non-standard.</strong> For continuous shifts, stochastic interventions, and longitudinal LMTPs, the closed form involves derivatives of the conditional density of <span class="math inline">\(A\)</span> given <span class="math inline">\(X\)</span>. Those are harder to estimate than <span class="math inline">\(\alpha_0\)</span> itself.</p></li>
+<li><p><strong>Misspecification compounds.</strong> Plug-in error in <span class="math inline">\(\hat\pi\)</span> propagates nonlinearly through <span class="math inline">\(1/\hat\pi\)</span>.</p></li>
 </ol>
 </section>
-<section id="riesz-regression-estimate-alpha_0-directly" class="level2">
-<h2 class="anchored" data-anchor-id="riesz-regression-estimate-alpha_0-directly">Riesz regression: estimate <span class="math inline">\(\alpha_0\)</span> directly</h2>
-<p>Chernozhukov et al.&nbsp;(<a href="https://arxiv.org/abs/2104.14737">2021</a>) observed that <span class="math inline">\(\alpha_0\)</span> is the unique minimizer of the <strong>Riesz loss</strong></p>
+<section id="riesz-regression" class="level2">
+<h2 class="anchored" data-anchor-id="riesz-regression">Riesz regression</h2>
+<p>Chernozhukov et al.&nbsp;(<a href="https://arxiv.org/abs/2104.14737">2021</a>) observed that <span class="math inline">\(\alpha_0\)</span> is the unique minimizer of the Riesz loss</p>
 <p><span class="math display">\[
 L(\alpha) \;=\; \mathbb{E}\!\left[\alpha(Z)^2 - 2\,m(Z, \alpha)\right]
 \]</span></p>
-<p>over all square-integrable <span class="math inline">\(\alpha\)</span>. (You can verify: the Gateaux derivative at <span class="math inline">\(\alpha_0\)</span> vanishes by the Riesz identity.) So estimating <span class="math inline">\(\alpha_0\)</span> becomes a <strong>regression problem with a custom loss</strong> — no propensity, no density derivative, no truncation.</p>
-<p>The minimizer is well-defined whether or not the closed-form <span class="math inline">\(\alpha_0\)</span> has nice tails. When <span class="math inline">\(\pi(x)\)</span> is small at some <span class="math inline">\(x\)</span>, the Riesz loss penalizes large <span class="math inline">\(\alpha\)</span> values <em>quadratically</em>; the resulting <span class="math inline">\(\hat\alpha\)</span> is shrunk toward zero in low-overlap regions, which is exactly what you want for downstream variance control.</p>
+<p>over all square-integrable <span class="math inline">\(\alpha\)</span>. The Gateaux derivative at <span class="math inline">\(\alpha_0\)</span> vanishes by the Riesz identity. Estimating <span class="math inline">\(\alpha_0\)</span> becomes a regression problem with a custom loss: no propensity, no density derivative, no truncation.</p>
+<p>The minimizer is well-defined regardless of the closed-form tails. Where <span class="math inline">\(\pi(x)\)</span> is small, the squared-loss penalty shrinks <span class="math inline">\(\hat\alpha\)</span> toward zero in low-overlap regions, which controls downstream variance.</p>
 </section>
 <section id="why-boost-it" class="level2">
 <h2 class="anchored" data-anchor-id="why-boost-it">Why boost it?</h2>
-<p>The Riesz loss is a regression loss like any other. Lee &amp; Schuler (<a href="https://arxiv.org/abs/2501.04871">2025</a>) show that gradient boosting is a particularly good fit:</p>
+<p>Lee &amp; Schuler (<a href="https://arxiv.org/abs/2501.04871">2025</a>) show gradient boosting fits the Riesz loss well:</p>
 <ul>
-<li><strong>Tabular-friendly.</strong> Boosting is the workhorse for tabular semiparametric problems; same hyperparameters that work for outcome models tend to transfer.</li>
-<li><strong>Direct gradient/Hessian access.</strong> For <em>finite-point</em> <span class="math inline">\(m\)</span> (any <span class="math inline">\(m\)</span> that’s a finite linear combination of point evaluations of <span class="math inline">\(\alpha\)</span> — which covers ATE, ATT, TSM, AdditiveShift, and Monte-Carlo’d stochastic interventions), the per-row gradient and Hessian have simple closed forms. xgboost’s custom objective consumes them directly with no surrogate.</li>
-<li><strong>Built-in regularization knobs.</strong> <code>max_depth</code>, <code>learning_rate</code>, <code>early_stopping_rounds</code>, <code>reg_lambda</code> all do exactly what they do for ordinary regression — and the <a href="./diagnostics-and-tuning.html">tuning page</a> walks through how to set them with <span class="math inline">\(\hat\alpha\)</span>-specific diagnostics in mind.</li>
+<li><strong>Tabular data.</strong> Boosting is the standard tool for tabular regression. Hyperparameters that work for outcome models transfer to Riesz regression.</li>
+<li><strong>Direct gradient and Hessian.</strong> When <span class="math inline">\(m\)</span> is a finite linear combination of point evaluations of <span class="math inline">\(\alpha\)</span> (ATE, ATT, TSM, AdditiveShift, Monte-Carlo’d stochastic interventions), the per-row gradient and Hessian have closed forms. xgboost’s custom objective consumes them directly.</li>
+<li><strong>Standard regularization.</strong> <code>max_depth</code>, <code>learning_rate</code>, <code>early_stopping_rounds</code>, and <code>reg_lambda</code> work as they do in regression. See <a href="./diagnostics-and-tuning.html">diagnostics and tuning</a> for <span class="math inline">\(\hat\alpha\)</span>-specific tuning advice.</li>
 </ul>
 </section>
-<section id="what-rieszboost-gives-you" class="level2">
-<h2 class="anchored" data-anchor-id="what-rieszboost-gives-you">What <code>rieszboost</code> gives you</h2>
-<p>A scikit-learn-style estimator that:</p>
+<section id="what-rieszboost-provides" class="level2">
+<h2 class="anchored" data-anchor-id="what-rieszboost-provides">What <code>rieszboost</code> provides</h2>
+<p>A scikit-learn estimator (and an R6 mirror) that:</p>
 <ul>
-<li>Boosts <span class="math inline">\(\hat\alpha\)</span> for any of the built-in estimands (<code>ATE</code>, <code>ATT</code>, <code>TSM</code>, <code>AdditiveShift</code>, <code>LocalShift</code>, <code>StochasticIntervention</code>) — or <a href="./estimands.html">your own</a> — without you ever writing down the closed-form Riesz representer.</li>
-<li>Composes with <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code> so cross-fitting and tuning are off-the-shelf.</li>
-<li>Surfaces near-positivity and outlier-extrapolation warnings via <code>.diagnose(X)</code> so you can catch failure modes before they bias downstream estimators.</li>
-<li>Has a parallel R6 wrapper in R so the same code runs in either language.</li>
+<li>Boosts <span class="math inline">\(\hat\alpha\)</span> for <code>ATE</code>, <code>ATT</code>, <code>TSM</code>, <code>AdditiveShift</code>, <code>LocalShift</code>, <code>StochasticIntervention</code>, or <a href="./estimands.html">your own estimand</a>.</li>
+<li>Composes with <code>cross_val_predict</code>, <code>GridSearchCV</code>, <code>Pipeline</code>.</li>
+<li>Surfaces near-positivity and outlier-extrapolation warnings via <code>.diagnose(X)</code>.</li>
 </ul>
-<p>Next: <a href="./install.html">install</a> and the <a href="./quickstart.html">30-line quickstart</a>.</p>
+<p>Next: <a href="./install.html">install</a> and the <a href="./quickstart.html">quickstart</a>.</p>
 
 
 </section>
